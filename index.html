@@ -108,9 +108,6 @@
     }
     .ai-btn:hover    { background: #eeede8; }
     .ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .loading-overlay {
-      text-align: center; padding: 2rem; font-size: 13px; color: #aaa;
-    }
     @media (prefers-color-scheme: dark) {
       body { background: #1a1a18; color: #e8e8e4; }
       .header-left h1, .metric-value { color: #e8e8e4; }
@@ -195,15 +192,13 @@
 
 <script>
 /* ═══════════════════════════════════════════
-   CONFIG — ne change que l'ID du Sheet si nécessaire
+   CONFIG
    ═══════════════════════════════════════════ */
 const SHEET_ID  = "1L0OGIG21FQr5yC9FgeL1a4ln8_PbnT0LtXcE-K_yqFc";
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+// range=A6:M1000 = lit à partir de la ligne 6 de ton Sheet
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&range=A6:M1000`;
 
-/* ═══════════════════════════════════════════
-   État
-   ═══════════════════════════════════════════ */
-let rows       = [];   // toutes les lignes du Sheet
+let rows       = [];
 let currentTab = "all";
 let chart      = null;
 let geminiKey  = "";
@@ -215,7 +210,7 @@ async function loadSheet() {
   try {
     const res  = await fetch(SHEET_URL);
     const text = await res.text();
-    rows = parseCSV(text);
+    rows = parseCSV(text).filter(r => r.Date && r.Date.trim() !== "");
 
     document.getElementById("liveBadge").style.display  = "inline-flex";
     document.getElementById("errorBadge").style.display = "none";
@@ -232,11 +227,11 @@ async function loadSheet() {
 }
 
 /* ═══════════════════════════════════════════
-   Parser CSV simple
+   Parser CSV — première ligne = en-têtes
    ═══════════════════════════════════════════ */
 function parseCSV(text) {
-  const lines  = text.trim().split("\n");
-  const headers= lines[0].split(",").map(h => h.replace(/"/g,"").trim());
+  const lines   = text.trim().split("\n");
+  const headers = lines[0].split(",").map(h => h.replace(/"/g,"").trim());
   return lines.slice(1).map(line => {
     const vals = line.split(",").map(v => v.replace(/"/g,"").trim());
     const obj  = {};
@@ -246,12 +241,12 @@ function parseCSV(text) {
 }
 
 /* ═══════════════════════════════════════════
-   Calcul tendance (dernière vs avant-dernière semaine)
+   Calcul tendance
    ═══════════════════════════════════════════ */
 function trend(current, previous, isPercent) {
   const diff = parseFloat(current) - parseFloat(previous);
   const sign = diff >= 0 ? "+" : "";
-  return isPercent ? `${sign}${diff.toFixed(1)}%` : `${sign}${diff.toFixed(1)}`;
+  return isPercent ? `${sign}${diff.toFixed(1)}%` : `${sign}${Math.round(diff)}`;
 }
 function trendUp(current, previous, invertedIsGood) {
   const diff = parseFloat(current) - parseFloat(previous);
@@ -259,7 +254,7 @@ function trendUp(current, previous, invertedIsGood) {
 }
 
 /* ═══════════════════════════════════════════
-   Données selon l'onglet
+   Métriques selon l'onglet
    ═══════════════════════════════════════════ */
 function getMetrics(tab) {
   if (!rows.length) return [];
@@ -267,37 +262,37 @@ function getMetrics(tab) {
   const prev = rows.length > 1 ? rows[rows.length - 2] : last;
 
   if (tab === "newsletter") return [
-    { label: "Taux d'ouverture", value: last.Ouverture + "%", trend: trend(last.Ouverture, prev.Ouverture, true),  up: trendUp(last.Ouverture, prev.Ouverture, false), source: "Mailchimp" },
-    { label: "Taux de clic",     value: last.Clics + "%",     trend: trend(last.Clics,     prev.Clics,     true),  up: trendUp(last.Clics,     prev.Clics,     false), source: "Mailchimp" },
-    { label: "Désabonnements",   value: last.Desabo + "%",    trend: trend(last.Desabo,    prev.Desabo,    true),  up: trendUp(last.Desabo,    prev.Desabo,    true),  source: "Mailchimp" },
+    { label: "Taux d'ouverture", value: last.Ouverture + "%",  trend: trend(last.Ouverture, prev.Ouverture, true),  up: trendUp(last.Ouverture, prev.Ouverture, false), source: "Mailchimp" },
+    { label: "Taux de clic",     value: last.Clics + "%",      trend: trend(last.Clics,     prev.Clics,     true),  up: trendUp(last.Clics,     prev.Clics,     false), source: "Mailchimp" },
+    { label: "Désabonnements",   value: last.Desabo + "%",     trend: trend(last.Desabo,    prev.Desabo,    true),  up: trendUp(last.Desabo,    prev.Desabo,    true),  source: "Mailchimp" },
     { label: "Abonnés actifs",   value: parseInt(last.Abonnes).toLocaleString("fr-CA"), trend: trend(last.Abonnes, prev.Abonnes, false), up: trendUp(last.Abonnes, prev.Abonnes, false), source: "Mailchimp" },
   ];
 
   if (tab === "linkedin") return [
-    { label: "Impressions",       value: parseInt(last.Impressions).toLocaleString("fr-CA"), trend: trend(last.Impressions,  prev.Impressions,  false), up: trendUp(last.Impressions,  prev.Impressions,  false), source: "LinkedIn" },
+    { label: "Impressions",       value: parseInt(last.Impressions).toLocaleString("fr-CA"), trend: trend(last.Impressions, prev.Impressions, false), up: trendUp(last.Impressions, prev.Impressions, false), source: "LinkedIn" },
     { label: "Taux d'engagement", value: last.Engagement + "%", trend: trend(last.Engagement, prev.Engagement, true), up: trendUp(last.Engagement, prev.Engagement, false), source: "LinkedIn" },
     { label: "Nouveaux abonnés",  value: last.NouveauxLK,       trend: trend(last.NouveauxLK, prev.NouveauxLK, false), up: trendUp(last.NouveauxLK, prev.NouveauxLK, false), source: "LinkedIn" },
-    { label: "Partages",          value: last.Partages,          trend: trend(last.Partages,   prev.Partages,   false), up: trendUp(last.Partages,   prev.Partages,   false), source: "LinkedIn" },
+    { label: "Partages",          value: last.Partages,          trend: trend(last.Partages, prev.Partages, false), up: trendUp(last.Partages, prev.Partages, false), source: "LinkedIn" },
   ];
 
   if (tab === "website") return [
-    { label: "Sessions",        value: parseInt(last.Sessions).toLocaleString("fr-CA"), trend: trend(last.Sessions,     prev.Sessions,     false), up: trendUp(last.Sessions,     prev.Sessions,     false), source: "Google Analytics" },
+    { label: "Sessions",        value: parseInt(last.Sessions).toLocaleString("fr-CA"), trend: trend(last.Sessions, prev.Sessions, false), up: trendUp(last.Sessions, prev.Sessions, false), source: "Google Analytics" },
     { label: "Pages / session", value: last.PagesSession, trend: trend(last.PagesSession, prev.PagesSession, false), up: trendUp(last.PagesSession, prev.PagesSession, false), source: "Google Analytics" },
-    { label: "Taux de rebond",  value: last.Rebond + "%", trend: trend(last.Rebond,       prev.Rebond,       true),  up: trendUp(last.Rebond,       prev.Rebond,       true),  source: "Google Analytics" },
-    { label: "Durée moy.",      value: Math.floor(last.Duree/60) + "m " + (last.Duree%60) + "s", trend: trend(last.Duree, prev.Duree, false) + "s", up: trendUp(last.Duree, prev.Duree, false), source: "Google Analytics" },
+    { label: "Taux de rebond",  value: last.Rebond + "%", trend: trend(last.Rebond, prev.Rebond, true), up: trendUp(last.Rebond, prev.Rebond, true), source: "Google Analytics" },
+    { label: "Durée moy.",      value: Math.floor(last.Duree/60) + "m " + (last.Duree % 60) + "s", trend: trend(last.Duree, prev.Duree, false) + "s", up: trendUp(last.Duree, prev.Duree, false), source: "Google Analytics" },
   ];
 
   // Vue d'ensemble
   return [
     { label: "Taux d'ouverture", value: last.Ouverture + "%", trend: trend(last.Ouverture, prev.Ouverture, true), up: trendUp(last.Ouverture, prev.Ouverture, false), source: "Infolettre" },
-    { label: "Abonnés LinkedIn", value: parseInt(last.Impressions).toLocaleString("fr-CA"), trend: trend(last.Impressions, prev.Impressions, false), up: trendUp(last.Impressions, prev.Impressions, false), source: "LinkedIn" },
+    { label: "Impressions LK",   value: parseInt(last.Impressions).toLocaleString("fr-CA"), trend: trend(last.Impressions, prev.Impressions, false), up: trendUp(last.Impressions, prev.Impressions, false), source: "LinkedIn" },
     { label: "Sessions web",     value: parseInt(last.Sessions).toLocaleString("fr-CA"), trend: trend(last.Sessions, prev.Sessions, false), up: trendUp(last.Sessions, prev.Sessions, false), source: "Site web" },
     { label: "Abonnés actifs",   value: parseInt(last.Abonnes).toLocaleString("fr-CA"), trend: trend(last.Abonnes, prev.Abonnes, false), up: trendUp(last.Abonnes, prev.Abonnes, false), source: "Infolettre" },
   ];
 }
 
 /* ═══════════════════════════════════════════
-   Données graphique selon l'onglet
+   Données graphique
    ═══════════════════════════════════════════ */
 function getChartData(tab, period) {
   const slice  = rows.slice(-period);
@@ -306,7 +301,7 @@ function getChartData(tab, period) {
     newsletter: { key: "Ouverture",   label: "Taux d'ouverture (%)", color: "#0F6E56" },
     linkedin:   { key: "Impressions", label: "Impressions",           color: "#534AB7" },
     website:    { key: "Sessions",    label: "Sessions",              color: "#BA7517" },
-    all:        { key: "Ouverture",   label: "Taux d'ouverture (%)", color: "#3266ad" },
+    all:        { key: "Abonnes",     label: "Abonnés actifs",        color: "#3266ad" },
   };
   const cfg  = configs[tab];
   const data = slice.map(r => parseFloat(r[cfg.key]));
@@ -320,7 +315,7 @@ function renderMetrics(tab) {
   const grid    = document.getElementById("metricsGrid");
   const metrics = getMetrics(tab);
   if (!metrics.length) {
-    grid.innerHTML = `<div class="loading-overlay">Chargement des données...</div>`;
+    grid.innerHTML = `<div style="font-size:13px;color:#aaa;padding:1rem">Chargement...</div>`;
     return;
   }
   grid.innerHTML = "";
