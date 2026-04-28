@@ -195,10 +195,13 @@
 <script>
 /* ═══════════════════════════════════════════
    CONFIG
+   Colonnes C à N (ligne 6 = en-têtes) :
+   C=Date, D=Abonnées, E=Nouveaux, F=Désabonn.
+   G=Impressions, H=Réactions, I=Abonnés(LK), J=Clics, K=Partages
+   L=Visiteurs, M=Sessions, N=Pages vues
    ═══════════════════════════════════════════ */
 const SHEET_ID  = "1L0OGIG21FQr5yC9FgeL1a4ln8_PbnT0LtXcE-K_yqFc";
-// range=C6:P1000 = lit à partir de la ligne 6 de ton Sheet
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&range=C6:P1000`;
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&range=C6:N1000`;
 
 let rows       = [];
 let currentTab = "all";
@@ -212,7 +215,7 @@ async function loadSheet() {
   try {
     const res  = await fetch(SHEET_URL);
     const text = await res.text();
-    rows = parseCSV(text).filter(r => r.Date && r.Date.trim() !== "");
+    rows = parseCSV(text).filter(r => r.Date && r.Date.trim() !== "" && r.Date !== "Date");
 
     document.getElementById("liveBadge").style.display  = "inline-flex";
     document.getElementById("errorBadge").style.display = "none";
@@ -229,7 +232,7 @@ async function loadSheet() {
 }
 
 /* ═══════════════════════════════════════════
-   Parser CSV — première ligne = en-têtes
+   Parser CSV
    ═══════════════════════════════════════════ */
 function parseCSV(text) {
   const lines   = text.trim().split("\n");
@@ -245,10 +248,10 @@ function parseCSV(text) {
 /* ═══════════════════════════════════════════
    Calcul tendance
    ═══════════════════════════════════════════ */
-function trend(current, previous, isPercent) {
+function trend(current, previous) {
   const diff = parseFloat(current) - parseFloat(previous);
   const sign = diff >= 0 ? "+" : "";
-  return isPercent ? `${sign}${diff.toFixed(1)}%` : `${sign}${Math.round(diff)}`;
+  return `${sign}${Math.round(diff)}`;
 }
 function trendUp(current, previous, invertedIsGood) {
   const diff = parseFloat(current) - parseFloat(previous);
@@ -263,33 +266,36 @@ function getMetrics(tab) {
   const last = rows[rows.length - 1];
   const prev = rows.length > 1 ? rows[rows.length - 2] : last;
 
+  // Colonnes exactes du Sheet
+  // D=Abonnées, E=Nouveaux, F=Désabonn.
+  // G=Impressions, H=Réactions, I=Abonnés, J=Clics, K=Partages
+  // L=Visiteurs, M=Sessions, N=Pages vues
+
   if (tab === "newsletter") return [
-    { label: "Taux d'ouverture", value: last.Ouverture + "%",  trend: trend(last.Ouverture, prev.Ouverture, true),  up: trendUp(last.Ouverture, prev.Ouverture, false), source: "Mailchimp" },
-    { label: "Taux de clic",     value: last.Clics + "%",      trend: trend(last.Clics,     prev.Clics,     true),  up: trendUp(last.Clics,     prev.Clics,     false), source: "Mailchimp" },
-    { label: "Désabonnements",   value: last.Desabo + "%",     trend: trend(last.Desabo,    prev.Desabo,    true),  up: trendUp(last.Desabo,    prev.Desabo,    true),  source: "Mailchimp" },
-    { label: "Abonnés actifs",   value: parseInt(last.Abonnes).toLocaleString("fr-CA"), trend: trend(last.Abonnes, prev.Abonnes, false), up: trendUp(last.Abonnes, prev.Abonnes, false), source: "Mailchimp" },
+    { label: "Abonnées",         value: parseInt(last["Abonnées"]  || last["Abonnes"] || 0).toLocaleString("fr-CA"), trend: trend(last["Abonnées"] || 0, prev["Abonnées"] || 0), up: trendUp(last["Abonnées"] || 0, prev["Abonnées"] || 0, false), source: "Mailchimp" },
+    { label: "Nouveaux",         value: parseInt(last["Nouveaux"]  || 0).toLocaleString("fr-CA"),                    trend: trend(last["Nouveaux"] || 0, prev["Nouveaux"] || 0), up: trendUp(last["Nouveaux"] || 0, prev["Nouveaux"] || 0, false), source: "Mailchimp" },
+    { label: "Désabonnements",   value: parseInt(last["Désabonn."] || last["Desabonn"] || 0).toLocaleString("fr-CA"), trend: trend(last["Désabonn."] || 0, prev["Désabonn."] || 0), up: trendUp(last["Désabonn."] || 0, prev["Désabonn."] || 0, true), source: "Mailchimp" },
   ];
 
   if (tab === "linkedin") return [
-    { label: "Impressions",          value: parseInt(last.Impressions).toLocaleString("fr-CA"), trend: trend(last.Impressions, prev.Impressions, false), up: trendUp(last.Impressions, prev.Impressions, false), source: "LinkedIn" },
-    { label: "Réactions",            value: parseInt(last["Réactions"] || 0).toLocaleString("fr-CA"), trend: trend(last["Réactions"] || 0, prev["Réactions"] || 0, false), up: trendUp(last["Réactions"] || 0, prev["Réactions"] || 0, false), source: "LinkedIn" },
-    { label: "Abonnés LinkedIn",     value: parseInt(last["Abonnés"] || 0).toLocaleString("fr-CA"), trend: trend(last["Abonnés"] || 0, prev["Abonnés"] || 0, false), up: trendUp(last["Abonnés"] || 0, prev["Abonnés"] || 0, false), source: "LinkedIn" },
-    { label: "Clics sur publication",value: parseInt(last["Clics"] || 0).toLocaleString("fr-CA"), trend: trend(last["Clics"] || 0, prev["Clics"] || 0, false), up: trendUp(last["Clics"] || 0, prev["Clics"] || 0, false), source: "LinkedIn" },
+    { label: "Impressions",          value: parseInt(last["Impressions"] || 0).toLocaleString("fr-CA"), trend: trend(last["Impressions"] || 0, prev["Impressions"] || 0), up: trendUp(last["Impressions"] || 0, prev["Impressions"] || 0, false), source: "LinkedIn" },
+    { label: "Réactions",            value: parseInt(last["Réactions"]   || 0).toLocaleString("fr-CA"), trend: trend(last["Réactions"]   || 0, prev["Réactions"]   || 0), up: trendUp(last["Réactions"]   || 0, prev["Réactions"]   || 0, false), source: "LinkedIn" },
+    { label: "Abonnés LinkedIn",     value: parseInt(last["Abonnés"]     || 0).toLocaleString("fr-CA"), trend: trend(last["Abonnés"]     || 0, prev["Abonnés"]     || 0), up: trendUp(last["Abonnés"]     || 0, prev["Abonnés"]     || 0, false), source: "LinkedIn" },
+    { label: "Clics publication",    value: parseInt(last["Clics"]       || 0).toLocaleString("fr-CA"), trend: trend(last["Clics"]       || 0, prev["Clics"]       || 0), up: trendUp(last["Clics"]       || 0, prev["Clics"]       || 0, false), source: "LinkedIn" },
   ];
 
   if (tab === "website") return [
-    { label: "Sessions",        value: parseInt(last.Sessions).toLocaleString("fr-CA"), trend: trend(last.Sessions, prev.Sessions, false), up: trendUp(last.Sessions, prev.Sessions, false), source: "Google Analytics" },
-    { label: "Pages / session", value: last.PagesSession, trend: trend(last.PagesSession, prev.PagesSession, false), up: trendUp(last.PagesSession, prev.PagesSession, false), source: "Google Analytics" },
-    { label: "Taux de rebond",  value: last.Rebond + "%", trend: trend(last.Rebond, prev.Rebond, true), up: trendUp(last.Rebond, prev.Rebond, true), source: "Google Analytics" },
-    { label: "Durée moy.",      value: Math.floor(last.Duree/60) + "m " + (last.Duree % 60) + "s", trend: trend(last.Duree, prev.Duree, false) + "s", up: trendUp(last.Duree, prev.Duree, false), source: "Google Analytics" },
+    { label: "Visiteurs",   value: parseInt(last["Visiteurs"]   || 0).toLocaleString("fr-CA"), trend: trend(last["Visiteurs"]   || 0, prev["Visiteurs"]   || 0), up: trendUp(last["Visiteurs"]   || 0, prev["Visiteurs"]   || 0, false), source: "Site web" },
+    { label: "Sessions",    value: parseInt(last["Sessions"]    || 0).toLocaleString("fr-CA"), trend: trend(last["Sessions"]    || 0, prev["Sessions"]    || 0), up: trendUp(last["Sessions"]    || 0, prev["Sessions"]    || 0, false), source: "Site web" },
+    { label: "Pages vues",  value: parseInt(last["Pages vues"]  || 0).toLocaleString("fr-CA"), trend: trend(last["Pages vues"]  || 0, prev["Pages vues"]  || 0), up: trendUp(last["Pages vues"]  || 0, prev["Pages vues"]  || 0, false), source: "Site web" },
   ];
 
-  // Vue d'ensemble
+  // Vue d'ensemble — 1 métrique clé par canal
   return [
-    { label: "Taux d'ouverture", value: last.Ouverture + "%", trend: trend(last.Ouverture, prev.Ouverture, true), up: trendUp(last.Ouverture, prev.Ouverture, false), source: "Infolettre" },
-    { label: "Impressions LK",   value: parseInt(last.Impressions).toLocaleString("fr-CA"), trend: trend(last.Impressions, prev.Impressions, false), up: trendUp(last.Impressions, prev.Impressions, false), source: "LinkedIn" },
-    { label: "Sessions web",     value: parseInt(last.Sessions).toLocaleString("fr-CA"), trend: trend(last.Sessions, prev.Sessions, false), up: trendUp(last.Sessions, prev.Sessions, false), source: "Site web" },
-    { label: "Abonnés actifs",   value: parseInt(last.Abonnes).toLocaleString("fr-CA"), trend: trend(last.Abonnes, prev.Abonnes, false), up: trendUp(last.Abonnes, prev.Abonnes, false), source: "Infolettre" },
+    { label: "Abonnées infolettre", value: parseInt(last["Abonnées"] || last["Abonnes"] || 0).toLocaleString("fr-CA"), trend: trend(last["Abonnées"] || 0, prev["Abonnées"] || 0), up: trendUp(last["Abonnées"] || 0, prev["Abonnées"] || 0, false), source: "Mailchimp" },
+    { label: "Impressions LK",      value: parseInt(last["Impressions"] || 0).toLocaleString("fr-CA"),                  trend: trend(last["Impressions"] || 0, prev["Impressions"] || 0), up: trendUp(last["Impressions"] || 0, prev["Impressions"] || 0, false), source: "LinkedIn" },
+    { label: "Abonnés LinkedIn",    value: parseInt(last["Abonnés"] || 0).toLocaleString("fr-CA"),                      trend: trend(last["Abonnés"] || 0, prev["Abonnés"] || 0), up: trendUp(last["Abonnés"] || 0, prev["Abonnés"] || 0, false), source: "LinkedIn" },
+    { label: "Visiteurs site web",  value: parseInt(last["Visiteurs"] || 0).toLocaleString("fr-CA"),                    trend: trend(last["Visiteurs"] || 0, prev["Visiteurs"] || 0), up: trendUp(last["Visiteurs"] || 0, prev["Visiteurs"] || 0, false), source: "Site web" },
   ];
 }
 
@@ -300,13 +306,13 @@ function getChartData(tab, period) {
   const slice  = rows.slice(-period);
   const labels = slice.map(r => r.Date);
   const configs = {
-    newsletter: { key: "Ouverture",   label: "Taux d'ouverture (%)", color: "#0F6E56" },
-    linkedin:   { key: "Impressions", label: "Impressions",           color: "#534AB7" },
-    website:    { key: "Sessions",    label: "Sessions",              color: "#BA7517" },
-    all:        { key: "Abonnes",     label: "Abonnés actifs",        color: "#3266ad" },
+    newsletter: { key: "Abonnées",    label: "Abonnées",     color: "#0F6E56" },
+    linkedin:   { key: "Impressions", label: "Impressions",  color: "#534AB7" },
+    website:    { key: "Visiteurs",   label: "Visiteurs",    color: "#BA7517" },
+    all:        { key: "Abonnées",    label: "Abonnées",     color: "#3266ad" },
   };
   const cfg  = configs[tab];
-  const data = slice.map(r => parseFloat(r[cfg.key]));
+  const data = slice.map(r => parseFloat(r[cfg.key] || 0));
   return { labels, data, label: cfg.label, color: cfg.color };
 }
 
