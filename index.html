@@ -145,6 +145,8 @@
         <option value="4">4 semaines</option>
         <option value="8" selected>8 semaines</option>
         <option value="12">12 semaines</option>
+        <option value="26">6 mois</option>
+        <option value="52">1 an</option>
       </select>
     </div>
   </div>
@@ -195,8 +197,8 @@
    CONFIG
    ═══════════════════════════════════════════ */
 const SHEET_ID  = "1L0OGIG21FQr5yC9FgeL1a4ln8_PbnT0LtXcE-K_yqFc";
-// range=C6:O1000 = lit à partir de la ligne 6 de ton Sheet
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&range=C6:O1000`;
+// range=C6:P1000 = lit à partir de la ligne 6 de ton Sheet
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&range=C6:P1000`;
 
 let rows       = [];
 let currentTab = "all";
@@ -269,10 +271,10 @@ function getMetrics(tab) {
   ];
 
   if (tab === "linkedin") return [
-    { label: "Impressions",       value: parseInt(last.Impressions).toLocaleString("fr-CA"), trend: trend(last.Impressions, prev.Impressions, false), up: trendUp(last.Impressions, prev.Impressions, false), source: "LinkedIn" },
-    { label: "Taux d'engagement", value: last.Engagement + "%", trend: trend(last.Engagement, prev.Engagement, true), up: trendUp(last.Engagement, prev.Engagement, false), source: "LinkedIn" },
-    { label: "Nouveaux abonnés",  value: last.NouveauxLK,       trend: trend(last.NouveauxLK, prev.NouveauxLK, false), up: trendUp(last.NouveauxLK, prev.NouveauxLK, false), source: "LinkedIn" },
-    { label: "Partages",          value: last.Partages,          trend: trend(last.Partages, prev.Partages, false), up: trendUp(last.Partages, prev.Partages, false), source: "LinkedIn" },
+    { label: "Impressions",          value: parseInt(last.Impressions).toLocaleString("fr-CA"), trend: trend(last.Impressions, prev.Impressions, false), up: trendUp(last.Impressions, prev.Impressions, false), source: "LinkedIn" },
+    { label: "Réactions",            value: parseInt(last["Réactions"] || 0).toLocaleString("fr-CA"), trend: trend(last["Réactions"] || 0, prev["Réactions"] || 0, false), up: trendUp(last["Réactions"] || 0, prev["Réactions"] || 0, false), source: "LinkedIn" },
+    { label: "Abonnés LinkedIn",     value: parseInt(last["Abonnés"] || 0).toLocaleString("fr-CA"), trend: trend(last["Abonnés"] || 0, prev["Abonnés"] || 0, false), up: trendUp(last["Abonnés"] || 0, prev["Abonnés"] || 0, false), source: "LinkedIn" },
+    { label: "Clics sur publication",value: parseInt(last["Clics"] || 0).toLocaleString("fr-CA"), trend: trend(last["Clics"] || 0, prev["Clics"] || 0, false), up: trendUp(last["Clics"] || 0, prev["Clics"] || 0, false), source: "LinkedIn" },
   ];
 
   if (tab === "website") return [
