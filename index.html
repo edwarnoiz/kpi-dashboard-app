@@ -18,14 +18,28 @@
     }
     .header-left h1 { font-size: 22px; font-weight: 500; }
     .header-left p  { font-size: 13px; color: #6b6b67; margin-top: 3px; }
-    .header-right { display: flex; align-items: center; gap: 8px; }
+    .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .live-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; color: #2d6e12; background: #eaf3de;
+      border-radius: 20px; padding: 3px 10px;
+    }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #3B6D11; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .error-badge {
+      display: none; align-items: center; gap: 5px;
+      font-size: 11px; color: #9e2a2a; background: #fcebeb;
+      border-radius: 20px; padding: 3px 10px;
+    }
+    .last-updated { font-size: 11px; color: #aaa; background: #f0f0ec; border-radius: 20px; padding: 3px 10px; }
+    .refresh-btn {
+      padding: 7px 14px; border-radius: 8px; border: 0.5px solid rgba(0,0,0,0.2);
+      background: #fff; font-size: 13px; cursor: pointer; color: #444;
+    }
+    .refresh-btn:hover { background: #f0f0ec; }
     .period-select {
       font-size: 13px; padding: 7px 12px; border-radius: 8px;
       border: 0.5px solid rgba(0,0,0,0.25); background: #fff; color: #444; cursor: pointer;
-    }
-    .last-updated {
-      font-size: 11px; color: #aaa;
-      background: #f0f0ec; border-radius: 20px; padding: 3px 10px;
     }
     .api-banner {
       background: #e8f4fb; border: 0.5px solid #7ab8d9; border-radius: 10px;
@@ -94,6 +108,9 @@
     }
     .ai-btn:hover    { background: #eeede8; }
     .ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .loading-overlay {
+      text-align: center; padding: 2rem; font-size: 13px; color: #aaa;
+    }
     @media (prefers-color-scheme: dark) {
       body { background: #1a1a18; color: #e8e8e4; }
       .header-left h1, .metric-value { color: #e8e8e4; }
@@ -102,7 +119,7 @@
       .tab { color: #aaa; border-color: rgba(255,255,255,0.2); }
       .tab.active { background: #3a3a38; color: #e8e8e4; border-color: rgba(255,255,255,0.35); }
       .tab:hover:not(.active) { background: rgba(255,255,255,0.05); }
-      .period-select { background: #2a2a28; color: #ccc; border-color: rgba(255,255,255,0.2); }
+      .period-select, .refresh-btn { background: #2a2a28; color: #ccc; border-color: rgba(255,255,255,0.2); }
       .ai-output { color: #ccc; }
       .ai-btn { background: #333330; color: #ccc; border-color: rgba(255,255,255,0.15); }
       .ai-btn:hover { background: #3e3e3a; }
@@ -123,11 +140,14 @@
       <p>Infolettre · LinkedIn · Site web</p>
     </div>
     <div class="header-right">
+      <span class="live-badge" id="liveBadge" style="display:none"><span class="live-dot"></span> Google Sheet live</span>
+      <span class="error-badge" id="errorBadge">⚠ Données hors ligne</span>
       <span class="last-updated" id="lastUpdated"></span>
-      <select class="period-select" id="periodSelect" onchange="updatePeriod(this.value)">
-        <option value="7">7 derniers jours</option>
-        <option value="30" selected>30 derniers jours</option>
-        <option value="90">3 derniers mois</option>
+      <button class="refresh-btn" onclick="loadSheet()">↻ Actualiser</button>
+      <select class="period-select" id="periodSelect" onchange="renderAll()">
+        <option value="4">4 semaines</option>
+        <option value="8" selected>8 semaines</option>
+        <option value="12">12 semaines</option>
       </select>
     </div>
   </div>
@@ -147,11 +167,11 @@
     <button class="tab"        onclick="switchTab('website',    this)">Site web</button>
   </div>
 
-  <div class="metrics-grid" id="metricsGrid"></div>
+  <div id="metricsGrid" class="metrics-grid"></div>
 
   <div class="chart-card">
-    <div class="chart-title" id="chartTitle">Évolution sur 30 jours</div>
-    <div style="position: relative; width: 100%; height: 220px;">
+    <div class="chart-title" id="chartTitle">Évolution</div>
+    <div style="position:relative;width:100%;height:220px;">
       <canvas id="mainChart" role="img" aria-label="Graphique d'évolution des KPI"></canvas>
     </div>
   </div>
@@ -172,103 +192,139 @@
   </div>
 
 </div>
+
 <script>
-/* ╔═══════════════════════════════════════════════════════════════╗
-   ║  MISE À JOUR HEBDOMADAIRE — modifie uniquement cette section  ║
-   ║  Chaque lundi, copie tes chiffres ici et fais un commit       ║
-   ╚═══════════════════════════════════════════════════════════════╝ */
+/* ═══════════════════════════════════════════
+   CONFIG — ne change que l'ID du Sheet si nécessaire
+   ═══════════════════════════════════════════ */
+const SHEET_ID  = "1L0OGIG21FQr5yC9FgeL1a4ln8_PbnT0LtXcE-K_yqFc";
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
-const DERNIERE_MISE_A_JOUR = "28 avril 2026"; // ← change la date ici
+/* ═══════════════════════════════════════════
+   État
+   ═══════════════════════════════════════════ */
+let rows       = [];   // toutes les lignes du Sheet
+let currentTab = "all";
+let chart      = null;
+let geminiKey  = "";
 
-const DATA = {
+/* ═══════════════════════════════════════════
+   Chargement Google Sheet
+   ═══════════════════════════════════════════ */
+async function loadSheet() {
+  try {
+    const res  = await fetch(SHEET_URL);
+    const text = await res.text();
+    rows = parseCSV(text);
 
-  /* ── INFOLETTRE (Mailchimp) ──────────────────────────────────── */
-  newsletter: {
-    metrics: [
-      { label: "Taux d'ouverture", value: "42.3%", trend: "+3.1%",  up: true  },
-      { label: "Taux de clic",     value: "6.7%",   trend: "+1.2%",  up: true  },
-      { label: "Désabonnements",   value: "0.4%",   trend: "-0.1%",  up: true  },
-      { label: "Abonnés actifs",   value: "3 412",  trend: "+5.8%",  up: true  },
-    ],
-    chartLabel: "Taux d'ouverture (%)",
-    // 90 valeurs = 3 mois de données quotidiennes (du plus ancien au plus récent)
-    chartData: [38,39,40,38,41,42,40,43,41,44,42,43,41,44,43,45,43,44,42,45,44,46,44,45,43,44,42,44,43,42,
-                36,37,38,36,39,40,38,41,39,42,40,41,39,42,41,43,41,42,40,43,42,44,42,43,41,42,40,42,41,40,
-                34,35,36,34,37,38,36,39,37,40,38,39,41,40,42,41,43,42,44,43,45,44,46,45,44,43,42,43,44,45],
-    chartColor: "#0F6E56",
-  },
+    document.getElementById("liveBadge").style.display  = "inline-flex";
+    document.getElementById("errorBadge").style.display = "none";
 
-  /* ── LINKEDIN ────────────────────────────────────────────────── */
-  linkedin: {
-    metrics: [
-      { label: "Impressions",       value: "24 580", trend: "+18.2%", up: true  },
-      { label: "Taux d'engagement", value: "4.2%",   trend: "+0.9%",  up: true  },
-      { label: "Nouveaux abonnés",  value: "127",    trend: "+22.1%", up: true  },
-      { label: "Partages",          value: "89",     trend: "-5.3%",  up: false },
-    ],
-    chartLabel: "Impressions (milliers)",
-    chartData: [0.6,0.7,0.8,0.9,0.8,1.0,1.1,0.9,1.2,1.1,1.3,1.2,1.4,1.3,1.5,1.4,1.6,1.5,1.7,1.6,1.8,1.7,1.9,1.8,2.0,1.9,2.1,2.0,2.2,2.1,
-                0.5,0.6,0.7,0.8,0.7,0.9,1.0,0.8,1.1,1.0,1.2,1.1,1.3,1.2,1.4,1.3,1.5,1.4,1.6,1.5,1.7,1.6,1.8,1.7,1.9,1.8,2.0,1.9,2.1,2.0,
-                0.4,0.5,0.6,0.7,0.6,0.8,0.9,0.7,1.0,0.9,1.1,1.0,1.2,1.1,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0,2.1,2.2,2.3,2.2,2.1,2.2,2.3,2.4],
-    chartColor: "#534AB7",
-  },
+    const last = rows[rows.length - 1];
+    document.getElementById("lastUpdated").textContent = "Mis à jour le " + last.Date;
 
-  /* ── SITE WEB (Google Analytics) ────────────────────────────── */
-  website: {
-    metrics: [
-      { label: "Sessions",        value: "8 204",  trend: "-2.1%",  up: false },
-      { label: "Pages / session", value: "2.4",    trend: "+0.2",   up: true  },
-      { label: "Taux de rebond",  value: "54%",    trend: "-3.2%",  up: true  },
-      { label: "Durée moy.",      value: "2m 38s", trend: "+12s",   up: true  },
-    ],
-    chartLabel: "Sessions (journalières)",
-    chartData: [280,310,295,320,305,290,315,330,310,295,280,310,325,340,315,300,285,310,295,320,335,310,295,280,305,320,295,310,285,295,
-                260,290,275,300,285,270,295,310,290,275,260,290,305,320,295,280,265,290,275,300,315,290,275,260,285,300,275,290,265,275,
-                240,270,255,280,265,250,275,290,270,255,240,270,285,300,275,260,275,290,305,320,295,280,265,280,295,310,285,270,285,300],
-    chartColor: "#BA7517",
-  },
-
-};
-
-/* ╔═══════════════════════════════════════════════════════════════╗
-   ║  FIN DE LA SECTION À MODIFIER — ne touche pas au reste        ║
-   ╚═══════════════════════════════════════════════════════════════╝ */
-
-// Vue d'ensemble = première métrique de chaque canal
-DATA.all = {
-  metrics: [
-    { ...DATA.newsletter.metrics[0], source: "Infolettre" },
-    { ...DATA.linkedin.metrics[0],   source: "LinkedIn"   },
-    { ...DATA.website.metrics[0],    source: "Site web"   },
-    { ...DATA.newsletter.metrics[3], source: "Infolettre" },
-  ],
-  chartLabel: "Indice global (normalisé)",
-  chartData: DATA.newsletter.chartData.map((v, i) =>
-    Math.round((v / 50 + DATA.linkedin.chartData[i] / 2.5 + DATA.website.chartData[i] / 350) / 3 * 100) / 100
-  ),
-  chartColor: "#3266ad",
-};
-
-let currentTab    = "all";
-let currentPeriod = 30;
-let chart         = null;
-let geminiKey     = "";
-
-// Afficher la date de mise à jour
-document.getElementById("lastUpdated").textContent = "Mis à jour le " + DERNIERE_MISE_A_JOUR;
-
-function saveGeminiKey() {
-  geminiKey = document.getElementById("apiKeyInput").value.trim();
-  if (geminiKey) {
-    document.getElementById("aiOutput").textContent = "Clé Gemini enregistrée ! Clique sur un bouton pour analyser tes KPI.";
-    document.getElementById("apiKeyInput").value = "••••••••••••••••";
+    renderAll();
+  } catch(e) {
+    document.getElementById("liveBadge").style.display  = "none";
+    document.getElementById("errorBadge").style.display = "inline-flex";
+    console.error("Erreur Sheet:", e);
   }
 }
 
+/* ═══════════════════════════════════════════
+   Parser CSV simple
+   ═══════════════════════════════════════════ */
+function parseCSV(text) {
+  const lines  = text.trim().split("\n");
+  const headers= lines[0].split(",").map(h => h.replace(/"/g,"").trim());
+  return lines.slice(1).map(line => {
+    const vals = line.split(",").map(v => v.replace(/"/g,"").trim());
+    const obj  = {};
+    headers.forEach((h, i) => obj[h] = vals[i] || "0");
+    return obj;
+  });
+}
+
+/* ═══════════════════════════════════════════
+   Calcul tendance (dernière vs avant-dernière semaine)
+   ═══════════════════════════════════════════ */
+function trend(current, previous, isPercent) {
+  const diff = parseFloat(current) - parseFloat(previous);
+  const sign = diff >= 0 ? "+" : "";
+  return isPercent ? `${sign}${diff.toFixed(1)}%` : `${sign}${diff.toFixed(1)}`;
+}
+function trendUp(current, previous, invertedIsGood) {
+  const diff = parseFloat(current) - parseFloat(previous);
+  return invertedIsGood ? diff <= 0 : diff >= 0;
+}
+
+/* ═══════════════════════════════════════════
+   Données selon l'onglet
+   ═══════════════════════════════════════════ */
+function getMetrics(tab) {
+  if (!rows.length) return [];
+  const last = rows[rows.length - 1];
+  const prev = rows.length > 1 ? rows[rows.length - 2] : last;
+
+  if (tab === "newsletter") return [
+    { label: "Taux d'ouverture", value: last.Ouverture + "%", trend: trend(last.Ouverture, prev.Ouverture, true),  up: trendUp(last.Ouverture, prev.Ouverture, false), source: "Mailchimp" },
+    { label: "Taux de clic",     value: last.Clics + "%",     trend: trend(last.Clics,     prev.Clics,     true),  up: trendUp(last.Clics,     prev.Clics,     false), source: "Mailchimp" },
+    { label: "Désabonnements",   value: last.Desabo + "%",    trend: trend(last.Desabo,    prev.Desabo,    true),  up: trendUp(last.Desabo,    prev.Desabo,    true),  source: "Mailchimp" },
+    { label: "Abonnés actifs",   value: parseInt(last.Abonnes).toLocaleString("fr-CA"), trend: trend(last.Abonnes, prev.Abonnes, false), up: trendUp(last.Abonnes, prev.Abonnes, false), source: "Mailchimp" },
+  ];
+
+  if (tab === "linkedin") return [
+    { label: "Impressions",       value: parseInt(last.Impressions).toLocaleString("fr-CA"), trend: trend(last.Impressions,  prev.Impressions,  false), up: trendUp(last.Impressions,  prev.Impressions,  false), source: "LinkedIn" },
+    { label: "Taux d'engagement", value: last.Engagement + "%", trend: trend(last.Engagement, prev.Engagement, true), up: trendUp(last.Engagement, prev.Engagement, false), source: "LinkedIn" },
+    { label: "Nouveaux abonnés",  value: last.NouveauxLK,       trend: trend(last.NouveauxLK, prev.NouveauxLK, false), up: trendUp(last.NouveauxLK, prev.NouveauxLK, false), source: "LinkedIn" },
+    { label: "Partages",          value: last.Partages,          trend: trend(last.Partages,   prev.Partages,   false), up: trendUp(last.Partages,   prev.Partages,   false), source: "LinkedIn" },
+  ];
+
+  if (tab === "website") return [
+    { label: "Sessions",        value: parseInt(last.Sessions).toLocaleString("fr-CA"), trend: trend(last.Sessions,     prev.Sessions,     false), up: trendUp(last.Sessions,     prev.Sessions,     false), source: "Google Analytics" },
+    { label: "Pages / session", value: last.PagesSession, trend: trend(last.PagesSession, prev.PagesSession, false), up: trendUp(last.PagesSession, prev.PagesSession, false), source: "Google Analytics" },
+    { label: "Taux de rebond",  value: last.Rebond + "%", trend: trend(last.Rebond,       prev.Rebond,       true),  up: trendUp(last.Rebond,       prev.Rebond,       true),  source: "Google Analytics" },
+    { label: "Durée moy.",      value: Math.floor(last.Duree/60) + "m " + (last.Duree%60) + "s", trend: trend(last.Duree, prev.Duree, false) + "s", up: trendUp(last.Duree, prev.Duree, false), source: "Google Analytics" },
+  ];
+
+  // Vue d'ensemble
+  return [
+    { label: "Taux d'ouverture", value: last.Ouverture + "%", trend: trend(last.Ouverture, prev.Ouverture, true), up: trendUp(last.Ouverture, prev.Ouverture, false), source: "Infolettre" },
+    { label: "Abonnés LinkedIn", value: parseInt(last.Impressions).toLocaleString("fr-CA"), trend: trend(last.Impressions, prev.Impressions, false), up: trendUp(last.Impressions, prev.Impressions, false), source: "LinkedIn" },
+    { label: "Sessions web",     value: parseInt(last.Sessions).toLocaleString("fr-CA"), trend: trend(last.Sessions, prev.Sessions, false), up: trendUp(last.Sessions, prev.Sessions, false), source: "Site web" },
+    { label: "Abonnés actifs",   value: parseInt(last.Abonnes).toLocaleString("fr-CA"), trend: trend(last.Abonnes, prev.Abonnes, false), up: trendUp(last.Abonnes, prev.Abonnes, false), source: "Infolettre" },
+  ];
+}
+
+/* ═══════════════════════════════════════════
+   Données graphique selon l'onglet
+   ═══════════════════════════════════════════ */
+function getChartData(tab, period) {
+  const slice  = rows.slice(-period);
+  const labels = slice.map(r => r.Date);
+  const configs = {
+    newsletter: { key: "Ouverture",   label: "Taux d'ouverture (%)", color: "#0F6E56" },
+    linkedin:   { key: "Impressions", label: "Impressions",           color: "#534AB7" },
+    website:    { key: "Sessions",    label: "Sessions",              color: "#BA7517" },
+    all:        { key: "Ouverture",   label: "Taux d'ouverture (%)", color: "#3266ad" },
+  };
+  const cfg  = configs[tab];
+  const data = slice.map(r => parseFloat(r[cfg.key]));
+  return { labels, data, label: cfg.label, color: cfg.color };
+}
+
+/* ═══════════════════════════════════════════
+   Rendu métriques
+   ═══════════════════════════════════════════ */
 function renderMetrics(tab) {
-  const grid = document.getElementById("metricsGrid");
+  const grid    = document.getElementById("metricsGrid");
+  const metrics = getMetrics(tab);
+  if (!metrics.length) {
+    grid.innerHTML = `<div class="loading-overlay">Chargement des données...</div>`;
+    return;
+  }
   grid.innerHTML = "";
-  DATA[tab].metrics.forEach(m => {
+  metrics.forEach(m => {
     const cls   = m.up ? "trend-up" : "trend-down";
     const arrow = m.up ? "↑" : "↓";
     const src   = m.source ? `<div class="metric-source">${m.source}</div>` : "";
@@ -282,26 +338,28 @@ function renderMetrics(tab) {
   });
 }
 
+/* ═══════════════════════════════════════════
+   Rendu graphique
+   ═══════════════════════════════════════════ */
 function renderChart(tab, period) {
-  const d      = DATA[tab];
-  const sliced = d.chartData.slice(-period);
-  const labels = sliced.map((_, i) => `J-${sliced.length - i}`);
-  document.getElementById("chartTitle").textContent = `${d.chartLabel} — ${period} derniers jours`;
+  if (!rows.length) return;
+  const { labels, data, label, color } = getChartData(tab, period);
+  document.getElementById("chartTitle").textContent = `${label} — ${period} dernières semaines`;
   if (chart) chart.destroy();
   chart = new Chart(document.getElementById("mainChart"), {
     type: "line",
     data: {
       labels,
       datasets: [{
-        label: d.chartLabel,
-        data: sliced,
-        borderColor: d.chartColor,
-        backgroundColor: d.chartColor + "18",
+        label,
+        data,
+        borderColor: color,
+        backgroundColor: color + "18",
         borderWidth: 1.5,
         tension: 0.4,
         fill: true,
-        pointRadius: 0,
-        pointHoverRadius: 4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
       }]
     },
     options: {
@@ -316,26 +374,43 @@ function renderChart(tab, period) {
   });
 }
 
+/* ═══════════════════════════════════════════
+   Navigation
+   ═══════════════════════════════════════════ */
+function renderAll() {
+  const period = parseInt(document.getElementById("periodSelect").value);
+  renderMetrics(currentTab);
+  renderChart(currentTab, period);
+}
+
 function switchTab(tab, btn) {
   currentTab = tab;
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
   btn.classList.add("active");
-  renderMetrics(tab);
-  renderChart(tab, currentPeriod);
+  renderAll();
   document.getElementById("aiOutput").textContent = "Clique sur un bouton pour analyser ce canal.";
 }
 
-function updatePeriod(val) {
-  currentPeriod = parseInt(val);
-  renderChart(currentTab, currentPeriod);
+/* ═══════════════════════════════════════════
+   Clé Gemini
+   ═══════════════════════════════════════════ */
+function saveGeminiKey() {
+  geminiKey = document.getElementById("apiKeyInput").value.trim();
+  if (geminiKey) {
+    document.getElementById("aiOutput").textContent = "Clé Gemini enregistrée ! Clique sur un bouton pour analyser tes KPI.";
+    document.getElementById("apiKeyInput").value = "••••••••••••••••";
+  }
 }
 
+/* ═══════════════════════════════════════════
+   Analyse IA — Google Gemini
+   ═══════════════════════════════════════════ */
 async function analyzeKPIs(type) {
   if (!geminiKey) {
     document.getElementById("aiOutput").textContent = "⚠️ Enregistre d'abord ta clé API Gemini ci-dessus.";
     return;
   }
-  const metrics  = DATA[currentTab].metrics.map(m => `${m.label}: ${m.value} (${m.trend})`).join(", ");
+  const metrics  = getMetrics(currentTab).map(m => `${m.label}: ${m.value} (${m.trend})`).join(", ");
   const tabLabel = { all: "vue d'ensemble", newsletter: "infolettre", linkedin: "LinkedIn", website: "site web" }[currentTab];
   const prompts  = {
     résume:          `Tu es un analyste marketing. Résume en 3 phrases claires la performance de ce canal (${tabLabel}) basée sur ces KPI : ${metrics}. Sois direct et concis.`,
@@ -367,8 +442,10 @@ async function analyzeKPIs(type) {
   }
 }
 
-renderMetrics("all");
-renderChart("all", 30);
+/* ═══════════════════════════════════════════
+   Init
+   ═══════════════════════════════════════════ */
+loadSheet();
 </script>
 </body>
 </html>
