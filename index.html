@@ -179,6 +179,9 @@
       display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 12px;
     }
+    .charts-stack {
+      display: flex; flex-direction: column; gap: 14px;
+    }
     .chart-card {
       background: var(--bg-card); border-radius: 12px;
       border: 0.5px solid var(--border); padding: 1rem 1.25rem;
@@ -390,12 +393,13 @@ function makeChart(id, label, data, lbls, color, type="line") {
 
 /* ── Carte graphique HTML ── */
 function chartCard(id, title, lastVal, fullWidth) {
+  const h = fullWidth ? "200px" : "120px";
   return `<div class="chart-card${fullWidth?" full-width":""}">
     <div class="chart-header">
       <span class="chart-title">${title}</span>
       <span class="chart-value">${lastVal}</span>
     </div>
-    <div style="position:relative;height:120px"><canvas id="${id}"></canvas></div>
+    <div style="position:relative;height:${h}"><canvas id="${id}"></canvas></div>
   </div>`;
 }
 
@@ -487,10 +491,10 @@ function renderAll_Newsletter(period) {
     </div>
   </div>`;
 
-  const chartsHTML = `<div class="charts-grid">
-    ${chartCard("nl_abonnees",    "Abonnées totales",    n(l["Abonnées"]),   false)}
-    ${chartCard("nl_nouveaux",    "Nouveaux abonnés",    n(l["Nouveaux"]),   false)}
-    ${chartCard("nl_desabo",      "Désabonnements",      n(l["Désabonn."]),  false)}
+  const chartsHTML = `<div class="charts-stack">
+    ${chartCard("nl_abonnees",    "Abonnées totales",    n(l["Abonnées"]),   true)}
+    ${chartCard("nl_nouveaux",    "Nouveaux abonnés",    n(l["Nouveaux"]),   true)}
+    ${chartCard("nl_desabo",      "Désabonnements",      n(l["Désabonn."]),  true)}
   </div>`;
 
   document.getElementById("tabContent").innerHTML = metricsHTML + chartsHTML;
@@ -536,11 +540,11 @@ function renderAll_LinkedIn(period) {
     </div>
   </div>`;
 
-  const chartsHTML = `<div class="charts-grid">
-    ${chartCard("lk_impressions", "Impressions",       n(l["Impressions"]), false)}
-    ${chartCard("lk_reactions",   "Réactions",         n(l["Réactions"]),   false)}
-    ${chartCard("lk_abonnes",     "Abonnés",           n(l["Abonnés"]),     false)}
-    ${chartCard("lk_clics",       "Clics publication", n(l["Clics"]),       false)}
+  const chartsHTML = `<div class="charts-stack">
+    ${chartCard("lk_impressions", "Impressions",       n(l["Impressions"]), true)}
+    ${chartCard("lk_reactions",   "Réactions",         n(l["Réactions"]),   true)}
+    ${chartCard("lk_abonnes",     "Abonnés",           n(l["Abonnés"]),     true)}
+    ${chartCard("lk_clics",       "Clics publication", n(l["Clics"]),       true)}
   </div>`;
 
   document.getElementById("tabContent").innerHTML = metricsHTML + chartsHTML;
@@ -581,10 +585,10 @@ function renderAll_Website(period) {
     </div>
   </div>`;
 
-  const chartsHTML = `<div class="charts-grid">
-    ${chartCard("wb_visiteurs",  "Visiteurs",   n(l["Visiteurs"]),   false)}
-    ${chartCard("wb_sessions",   "Sessions",    n(l["Sessions"]),    false)}
-    ${chartCard("wb_pagesvues",  "Pages vues",  n(l["Pages vues"]),  false)}
+  const chartsHTML = `<div class="charts-stack">
+    ${chartCard("wb_visiteurs",  "Visiteurs",   n(l["Visiteurs"]),   true)}
+    ${chartCard("wb_sessions",   "Sessions",    n(l["Sessions"]),    true)}
+    ${chartCard("wb_pagesvues",  "Pages vues",  n(l["Pages vues"]),  true)}
   </div>`;
 
   document.getElementById("tabContent").innerHTML = metricsHTML + chartsHTML;
