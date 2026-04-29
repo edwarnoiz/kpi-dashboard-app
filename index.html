@@ -221,6 +221,40 @@
     [data-theme="dark"] .ai-btn:hover { background: #FFCC4E; color: #0a0f1a; }
     .ai-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+    /* ── Insights ── */
+    .insights-card {
+      background: var(--bg-card); border-radius: 12px;
+      border: 0.5px solid var(--border); border-left: 4px solid #FFCC4E;
+      padding: 1.25rem; box-shadow: var(--shadow); margin-bottom: 1.5rem;
+    }
+    .insights-title {
+      font-size: 12px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 1rem;
+    }
+    .insights-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    }
+    .insights-col h4 {
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .insights-list { list-style: none; }
+    .insights-list li {
+      font-size: 13px; color: var(--text);
+      padding: 6px 0; border-bottom: 0.5px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .insights-list li:last-child { border-bottom: none; }
+    .insights-num {
+      font-size: 10px; font-weight: 700; color: #fff;
+      background: #FFCC4E; border-radius: 50%;
+      width: 18px; height: 18px; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; color: #003469;
+    }
+    .insights-empty { font-size: 12px; color: var(--text-muted); font-style: italic; }
+    @media (max-width: 500px) { .insights-grid { grid-template-columns: 1fr; } }
+
     /* ── Footer ── */
     .footer-bar { height: 4px; background: linear-gradient(90deg, #003469, #0061AF, #00A759, #FFCC4E, #EE3124); }
     .site-footer { text-align: center; padding: 1rem; font-size: 11px; color: var(--text-muted); }
@@ -306,7 +340,7 @@ document.getElementById("headerLogo").src = "data:image/png;base64," + LOGO_WHIT
 
 /* ── Config Sheet ── */
 const SHEET_ID  = "1L0OGIG21FQr5yC9FgeL1a4ln8_PbnT0LtXcE-K_yqFc";
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&range=C6:N1000`;
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&range=C6:T1000`;
 
 let rows       = [];
 let currentTab = "all";
@@ -452,7 +486,7 @@ function renderAll_Overview(period) {
     ${chartCard("c_engagement",  "Engagement LinkedIn",   n(engage),           false)}
   </div>`;
 
-  document.getElementById("tabContent").innerHTML = kpiHTML + chartsHTML;
+  document.getElementById("tabContent").innerHTML = kpiHTML + chartsHTML + insightsHTML(l);
 
   setTimeout(() => {
     makeChart("c_impressions", "Impressions",  vals("Impressions", period),   lb, "#0061AF");
@@ -591,13 +625,44 @@ function renderAll_Website(period) {
     ${chartCard("wb_pagesvues",  "Pages vues",  n(l["Pages vues"]),  true)}
   </div>`;
 
-  document.getElementById("tabContent").innerHTML = metricsHTML + chartsHTML;
+  document.getElementById("tabContent").innerHTML = metricsHTML + chartsHTML + insightsHTML(l);
 
   setTimeout(() => {
     makeChart("wb_visiteurs", "Visiteurs",  vals("Visiteurs",   period), lb, "#00A759");
     makeChart("wb_sessions",  "Sessions",   vals("Sessions",    period), lb, "#0061AF");
     makeChart("wb_pagesvues", "Pages vues", vals("Pages vues",  period), lb, "#003469");
   }, 50);
+}
+
+/* ── Insights HTML ── */
+function insightsHTML(l) {
+  const r1 = l["Recherche1"] || ""; const r2 = l["Recherche2"] || ""; const r3 = l["Recherche3"] || "";
+  const p1 = l["Page1"] || "";      const p2 = l["Page2"] || "";      const p3 = l["Page3"] || "";
+
+  const recherches = [r1, r2, r3].filter(x => x && x !== "0");
+  const pages      = [p1, p2, p3].filter(x => x && x !== "0");
+
+  const liRecherches = recherches.length
+    ? recherches.map((r, i) => `<li><span class="insights-num">${i+1}</span>${r}</li>`).join("")
+    : `<li class="insights-empty">Aucune donnée cette semaine</li>`;
+
+  const liPages = pages.length
+    ? pages.map((p, i) => `<li><span class="insights-num">${i+1}</span>${p}</li>`).join("")
+    : `<li class="insights-empty">Aucune donnée cette semaine</li>`;
+
+  return `<div class="insights-card">
+    <div class="insights-title">💡 Insights de la semaine — Site web</div>
+    <div class="insights-grid">
+      <div class="insights-col">
+        <h4>🔍 Recherches qui mènent au site</h4>
+        <ul class="insights-list">${liRecherches}</ul>
+      </div>
+      <div class="insights-col">
+        <h4>📄 Pages les plus visitées (7 jours)</h4>
+        <ul class="insights-list">${liPages}</ul>
+      </div>
+    </div>
+  </div>`;
 }
 
 /* ── Navigation ── */
