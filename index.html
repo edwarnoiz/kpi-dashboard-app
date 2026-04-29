@@ -340,7 +340,7 @@ document.getElementById("headerLogo").src = "data:image/png;base64," + LOGO_WHIT
 
 /* ── Config Sheet ── */
 const SHEET_ID  = "1L0OGIG21FQr5yC9FgeL1a4ln8_PbnT0LtXcE-K_yqFc";
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&range=C6:T1000`;
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&range=C6:S1000`;
 
 let rows       = [];
 let currentTab = "all";
@@ -517,18 +517,13 @@ function renderAll_Newsletter(period) {
       <div class="metric-trend ${tUp(l["Nouveaux"],p["Nouveaux"],false)?"trend-up":"trend-down"}">${tUp(l["Nouveaux"],p["Nouveaux"],false)?"↑":"↓"} ${td(l["Nouveaux"],p["Nouveaux"])}</div>
       <div class="metric-source">Mailchimp</div>
     </div>
-    <div class="metric-card" style="--card-accent:#EE3124">
-      <div class="metric-label">Désabonnements</div>
-      <div class="metric-value">${n(l["Désabonn."])}</div>
-      <div class="metric-trend ${tUp(l["Désabonn."],p["Désabonn."],true)?"trend-up":"trend-down"}">${tUp(l["Désabonn."],p["Désabonn."],true)?"↑":"↓"} ${td(l["Désabonn."],p["Désabonn."])}</div>
-      <div class="metric-source">Mailchimp</div>
-    </div>
+
   </div>`;
 
   const chartsHTML = `<div class="charts-stack">
     ${chartCard("nl_abonnees",    "Abonnées totales",    n(l["Abonnées"]),   true)}
     ${chartCard("nl_nouveaux",    "Nouveaux abonnés",    n(l["Nouveaux"]),   true)}
-    ${chartCard("nl_desabo",      "Désabonnements",      n(l["Désabonn."]),  true)}
+
   </div>`;
 
   document.getElementById("tabContent").innerHTML = metricsHTML + chartsHTML;
@@ -536,7 +531,7 @@ function renderAll_Newsletter(period) {
   setTimeout(() => {
     makeChart("nl_abonnees", "Abonnées",      vals("Abonnées",    period), lb, "#003469");
     makeChart("nl_nouveaux", "Nouveaux",      vals("Nouveaux",    period), lb, "#0061AF");
-    makeChart("nl_desabo",   "Désabonn.",     vals("Désabonn.",   period), lb, "#EE3124");
+
   }, 50);
 }
 
@@ -703,7 +698,7 @@ function getCurrentMetrics() {
     all:        [["Portée totale", parseInt(l["Impressions"]||0)+parseInt(l["Visiteurs"]||0)+parseInt(l["Abonnées"]||0)],
                  ["Croissance audience", parseInt(l["Nouveaux"]||0)+parseInt(l["Abonnés"]||0)],
                  ["Engagement", parseInt(l["Réactions"]||0)+parseInt(l["Clics"]||0)]],
-    newsletter: [["Abonnées", l["Abonnées"]], ["Nouveaux", l["Nouveaux"]], ["Désabonnements", l["Désabonn."]]],
+    newsletter: [["Abonnées", l["Abonnées"]], ["Nouveaux", l["Nouveaux"]]],
     linkedin:   [["Impressions", l["Impressions"]], ["Réactions", l["Réactions"]], ["Abonnés", l["Abonnés"]], ["Clics", l["Clics"]]],
     website:    [["Visiteurs", l["Visiteurs"]], ["Sessions", l["Sessions"]], ["Pages vues", l["Pages vues"]]],
   };
