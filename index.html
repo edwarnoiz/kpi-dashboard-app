@@ -280,6 +280,8 @@
       <span class="last-updated" id="lastUpdated"></span>
       <button class="ctrl-btn" onclick="loadSheet()">↻ Actualiser</button>
       <select class="period-select" id="periodSelect" onchange="renderAll()">
+        <option value="1">1 semaine</option>
+        <option value="2">2 semaines</option>
         <option value="4">4 semaines</option>
         <option value="8" selected>8 semaines</option>
         <option value="12">12 semaines</option>
@@ -631,6 +633,8 @@ function renderAll_Website(period) {
 
 /* ── Label période ── */
 function periodLabel(period) {
+  if (period <= 1)  return "vs semaine précédente";
+  if (period <= 2)  return "vs il y a 2 semaines";
   if (period <= 4)  return "vs il y a 4 semaines";
   if (period <= 8)  return "vs il y a 8 semaines";
   if (period <= 12) return "vs il y a 12 semaines";
