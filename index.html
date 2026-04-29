@@ -441,9 +441,9 @@ function chartCard(id, title, lastVal, fullWidth) {
 function renderAll_Overview(period) {
   if (!rows.length) { document.getElementById("tabContent").innerHTML = `<p style="color:var(--text-muted);font-size:13px">Chargement...</p>`; return; }
   const l = rows[rows.length-1];
-  const p = rows.length>1 ? rows[rows.length-2] : l;
   const s = sliced(period);
   const lb = labels(period);
+  const p = s.length>1 ? s[0] : l;
 
   // Calculs synthèse
   const portee     = parseInt(l["Impressions"]||0) + parseInt(l["Visiteurs"]||0) + parseInt(l["Abonnées"]||0);
@@ -501,8 +501,8 @@ function renderAll_Overview(period) {
 function renderAll_Newsletter(period) {
   if (!rows.length) return;
   const l = rows[rows.length-1];
-  const p = rows.length>1 ? rows[rows.length-2] : l;
   const lb = labels(period);
+  const p = rows.slice(-period).length>1 ? rows.slice(-period)[0] : l;
 
   const metricsHTML = `<div class="metrics-grid" style="--card-accent:#003469">
     <div class="metric-card" style="--card-accent:#003469">
@@ -539,8 +539,8 @@ function renderAll_Newsletter(period) {
 function renderAll_LinkedIn(period) {
   if (!rows.length) return;
   const l = rows[rows.length-1];
-  const p = rows.length>1 ? rows[rows.length-2] : l;
   const lb = labels(period);
+  const p = rows.slice(-period).length>1 ? rows.slice(-period)[0] : l;
 
   const metricsHTML = `<div class="metrics-grid">
     <div class="metric-card" style="--card-accent:#003469">
@@ -590,8 +590,8 @@ function renderAll_LinkedIn(period) {
 function renderAll_Website(period) {
   if (!rows.length) return;
   const l = rows[rows.length-1];
-  const p = rows.length>1 ? rows[rows.length-2] : l;
   const lb = labels(period);
+  const p = rows.slice(-period).length>1 ? rows.slice(-period)[0] : l;
 
   const metricsHTML = `<div class="metrics-grid">
     <div class="metric-card" style="--card-accent:#00A759">
