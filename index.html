@@ -290,8 +290,8 @@
   </div>
 
   <div class="api-banner">
-    <span>Clé API Google Gemini (gratuit) — <a href="https://aistudio.google.com/app/apikey" target="_blank">Obtenir ma clé</a></span>
-    <input type="password" id="apiKeyInput" placeholder="AIza..." />
+    <span>Clé API OpenRouter (gratuit) — <a href="https://openrouter.ai/keys" target="_blank">Obtenir ma clé</a></span>
+    <input type="password" id="apiKeyInput" placeholder="sk-or-..." />
     <button onclick="saveGeminiKey()">Enregistrer</button>
   </div>
 
@@ -308,10 +308,10 @@
   <div class="ai-card" style="margin-top:1.5rem">
     <div class="ai-header">
       <div class="ai-dot"></div>
-      <span class="ai-header-title">Analyse IA — Gemini</span>
+      <span class="ai-header-title">Analyse IA — OpenRouter</span>
       <div class="spinner" id="aiSpinner"></div>
     </div>
-    <div class="ai-output" id="aiOutput">Enregistre ta clé Gemini puis clique sur un bouton pour générer une analyse.</div>
+    <div class="ai-output" id="aiOutput">Enregistre ta clé OpenRouter puis clique sur un bouton pour générer une analyse.</div>
     <div class="ai-buttons">
       <button class="ai-btn" onclick="analyzeKPIs('résume')">Résumé de performance ↗</button>
       <button class="ai-btn" onclick="analyzeKPIs('anomalie')">Détecter anomalies ↗</button>
@@ -693,7 +693,7 @@ function switchTab(tab, btn) {
 function saveGeminiKey() {
   geminiKey = document.getElementById("apiKeyInput").value.trim();
   if (geminiKey) {
-    document.getElementById("aiOutput").textContent = "Clé Gemini enregistrée !";
+    document.getElementById("aiOutput").textContent = "Clé OpenRouter enregistrée !";
     document.getElementById("apiKeyInput").value = "••••••••••••••••";
   }
 }
@@ -731,14 +731,18 @@ async function analyzeKPIs(type) {
   spinner.style.display = "inline-block";
   btns.forEach(b => b.disabled = true);
   try {
-    const res  = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-      { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompts[type] }] }] }) });
+    const res  = await fetch("https://openrouter.ai/api/v1/chat/completions",
+      { method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + geminiKey },
+        body: JSON.stringify({
+          model: "meta-llama/llama-3.3-8b-instruct:free",
+          messages: [{ role: "user", content: prompts[type] }]
+        }) });
     const data = await res.json();
     spinner.style.display = "none";
     btns.forEach(b => b.disabled = false);
     if (data.error) { out.textContent = "Erreur : " + data.error.message; return; }
-    out.textContent = data.candidates?.[0]?.content?.parts?.[0]?.text || "Aucune réponse.";
+    out.textContent = data.choices?.[0]?.message?.content || "Aucune réponse.";
   } catch(e) {
     spinner.style.display = "none";
     btns.forEach(b => b.disabled = false);
