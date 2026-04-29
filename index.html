@@ -461,19 +461,19 @@ function renderAll_Overview(period) {
     <div class="kpi-big-card" style="--card-accent:#003469">
       <div class="kpi-big-label">🌐 Portée totale</div>
       <div class="kpi-big-value">${portee.toLocaleString("fr-CA")}</div>
-      <div class="kpi-big-trend ${diffPortee>=0?"trend-up":"trend-down"}">${diffPortee>=0?"↑":"↓"} ${Math.abs(diffPortee).toLocaleString("fr-CA")} vs semaine préc.</div>
+      <div class="kpi-big-trend ${diffPortee>=0?"trend-up":"trend-down"}">${diffPortee>=0?"↑":"↓"} ${Math.abs(diffPortee).toLocaleString("fr-CA")} \${periodLabel(period)}</div>
       <div class="kpi-big-sub">Impressions LK + Visiteurs + Abonnées</div>
     </div>
     <div class="kpi-big-card" style="--card-accent:#0061AF">
       <div class="kpi-big-label">📈 Croissance audience</div>
       <div class="kpi-big-value">${croissance.toLocaleString("fr-CA")}</div>
-      <div class="kpi-big-trend ${diffCroiss>=0?"trend-up":"trend-down"}">${diffCroiss>=0?"↑":"↓"} ${Math.abs(diffCroiss).toLocaleString("fr-CA")} vs semaine préc.</div>
+      <div class="kpi-big-trend ${diffCroiss>=0?"trend-up":"trend-down"}">${diffCroiss>=0?"↑":"↓"} ${Math.abs(diffCroiss).toLocaleString("fr-CA")} \${periodLabel(period)}</div>
       <div class="kpi-big-sub">Croiss. nette Mailchimp + Abonnés LinkedIn</div>
     </div>
     <div class="kpi-big-card" style="--card-accent:#00A759">
       <div class="kpi-big-label">💬 Engagement</div>
       <div class="kpi-big-value">${engage.toLocaleString("fr-CA")}</div>
-      <div class="kpi-big-trend ${diffEngage>=0?"trend-up":"trend-down"}">${diffEngage>=0?"↑":"↓"} ${Math.abs(diffEngage).toLocaleString("fr-CA")} vs semaine préc.</div>
+      <div class="kpi-big-trend ${diffEngage>=0?"trend-up":"trend-down"}">${diffEngage>=0?"↑":"↓"} ${Math.abs(diffEngage).toLocaleString("fr-CA")} \${periodLabel(period)}</div>
       <div class="kpi-big-sub">Réactions + Clics LinkedIn</div>
     </div>
   </div>`;
@@ -627,6 +627,15 @@ function renderAll_Website(period) {
     makeChart("wb_sessions",  "Sessions",   vals("Sessions",    period), lb, "#0061AF");
     makeChart("wb_pagesvues", "Pages vues", vals("Pages vues",  period), lb, "#003469");
   }, 50);
+}
+
+/* ── Label période ── */
+function periodLabel(period) {
+  if (period <= 4)  return "vs il y a 4 semaines";
+  if (period <= 8)  return "vs il y a 8 semaines";
+  if (period <= 12) return "vs il y a 12 semaines";
+  if (period <= 26) return "vs il y a 6 mois";
+  return "vs il y a 1 an";
 }
 
 /* ── Insights HTML ── */
