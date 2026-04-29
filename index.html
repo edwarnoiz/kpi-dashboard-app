@@ -448,8 +448,8 @@ function renderAll_Overview(period) {
   // Calculs synthèse
   const portee     = parseInt(l["Impressions"]||0) + parseInt(l["Visiteurs"]||0) + parseInt(l["Abonnées"]||0);
   const porteePrev = parseInt(p["Impressions"]||0) + parseInt(p["Visiteurs"]||0) + parseInt(p["Abonnées"]||0);
-  const croissance = parseInt(l["Nouveaux"]||0) + parseInt(l["Abonnés"]||0);
-  const croissPrev = parseInt(p["Nouveaux"]||0) + parseInt(p["Abonnés"]||0);
+  const croissance = parseInt(l["Croiss. nette"]||0) + parseInt(l["Abonnés"]||0);
+  const croissPrev = parseInt(p["Croiss. nette"]||0) + parseInt(p["Abonnés"]||0);
   const engage     = parseInt(l["Réactions"]||0) + parseInt(l["Clics"]||0);
   const engagePrev = parseInt(p["Réactions"]||0) + parseInt(p["Clics"]||0);
 
@@ -468,7 +468,7 @@ function renderAll_Overview(period) {
       <div class="kpi-big-label">📈 Croissance audience</div>
       <div class="kpi-big-value">${croissance.toLocaleString("fr-CA")}</div>
       <div class="kpi-big-trend ${diffCroiss>=0?"trend-up":"trend-down"}">${diffCroiss>=0?"↑":"↓"} ${Math.abs(diffCroiss).toLocaleString("fr-CA")} vs semaine préc.</div>
-      <div class="kpi-big-sub">Nouveaux Mailchimp + Abonnés LinkedIn</div>
+      <div class="kpi-big-sub">Croiss. nette Mailchimp + Abonnés LinkedIn</div>
     </div>
     <div class="kpi-big-card" style="--card-accent:#00A759">
       <div class="kpi-big-label">💬 Engagement</div>
@@ -512,9 +512,9 @@ function renderAll_Newsletter(period) {
       <div class="metric-source">Mailchimp</div>
     </div>
     <div class="metric-card" style="--card-accent:#0061AF">
-      <div class="metric-label">Nouveaux</div>
-      <div class="metric-value">${n(l["Nouveaux"])}</div>
-      <div class="metric-trend ${tUp(l["Nouveaux"],p["Nouveaux"],false)?"trend-up":"trend-down"}">${tUp(l["Nouveaux"],p["Nouveaux"],false)?"↑":"↓"} ${td(l["Nouveaux"],p["Nouveaux"])}</div>
+      <div class="metric-label">Croissance nette</div>
+      <div class="metric-value">${n(l["Croiss. nette"])}</div>
+      <div class="metric-trend ${tUp(l["Croiss. nette"],p["Croiss. nette"],false)?"trend-up":"trend-down"}">${tUp(l["Croiss. nette"],p["Croiss. nette"],false)?"↑":"↓"} ${td(l["Croiss. nette"],p["Croiss. nette"])}</div>
       <div class="metric-source">Mailchimp</div>
     </div>
 
@@ -522,7 +522,7 @@ function renderAll_Newsletter(period) {
 
   const chartsHTML = `<div class="charts-stack">
     ${chartCard("nl_abonnees",    "Abonnées totales",    n(l["Abonnées"]),   true)}
-    ${chartCard("nl_nouveaux",    "Nouveaux abonnés",    n(l["Nouveaux"]),   true)}
+    ${chartCard("nl_nouveaux",    "Croissance nette",    n(l["Croiss. nette"]),   true)}
 
   </div>`;
 
@@ -530,7 +530,7 @@ function renderAll_Newsletter(period) {
 
   setTimeout(() => {
     makeChart("nl_abonnees", "Abonnées",      vals("Abonnées",    period), lb, "#003469");
-    makeChart("nl_nouveaux", "Nouveaux",      vals("Nouveaux",    period), lb, "#0061AF");
+    makeChart("nl_nouveaux", "Croiss. nette",      vals("Croiss. nette",    period), lb, "#0061AF");
 
   }, 50);
 }
@@ -696,9 +696,9 @@ function getCurrentMetrics() {
   const p = rows.length>1 ? rows[rows.length-2] : l;
   const map = {
     all:        [["Portée totale", parseInt(l["Impressions"]||0)+parseInt(l["Visiteurs"]||0)+parseInt(l["Abonnées"]||0)],
-                 ["Croissance audience", parseInt(l["Nouveaux"]||0)+parseInt(l["Abonnés"]||0)],
+                 ["Croissance audience", parseInt(l["Croiss. nette"]||0)+parseInt(l["Abonnés"]||0)],
                  ["Engagement", parseInt(l["Réactions"]||0)+parseInt(l["Clics"]||0)]],
-    newsletter: [["Abonnées", l["Abonnées"]], ["Nouveaux", l["Nouveaux"]]],
+    newsletter: [["Abonnées", l["Abonnées"]], ["Croiss. nette", l["Croiss. nette"]]],
     linkedin:   [["Impressions", l["Impressions"]], ["Réactions", l["Réactions"]], ["Abonnés", l["Abonnés"]], ["Clics", l["Clics"]]],
     website:    [["Visiteurs", l["Visiteurs"]], ["Sessions", l["Sessions"]], ["Pages vues", l["Pages vues"]]],
   };
