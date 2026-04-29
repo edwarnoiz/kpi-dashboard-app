@@ -735,7 +735,7 @@ async function analyzeKPIs(type) {
       { method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + geminiKey },
         body: JSON.stringify({
-          model: "mistralai/mistral-7b-instruct:free",
+          model: "openrouter/auto",
           messages: [{ role: "user", content: prompts[type] }]
         }) });
     const data = await res.json();
