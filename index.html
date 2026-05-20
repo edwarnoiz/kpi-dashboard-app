@@ -603,9 +603,9 @@ function renderAll_Website(period) {
       <div class="metric-source">Site web</div>
     </div>
     <div class="metric-card" style="--card-accent:#0061AF">
-      <div class="metric-label">Sessions</div>
-      <div class="metric-value">${n(l["Sessions"])}</div>
-      <div class="metric-trend ${tUp(l["Sessions"],p["Sessions"],false)?"trend-up":"trend-down"}">${tUp(l["Sessions"],p["Sessions"],false)?"↑":"↓"} ${td(l["Sessions"],p["Sessions"])}</div>
+      <div class="metric-label">Clics</div>
+      <div class="metric-value">${n(l["ClicsSite"])}</div>
+      <div class="metric-trend ${tUp(l["ClicsSite"],p["ClicsSite"],false)?"trend-up":"trend-down"}">${tUp(l["ClicsSite"],p["ClicsSite"],false)?"↑":"↓"} ${td(l["ClicsSite"],p["ClicsSite"])}</div>
       <div class="metric-source">Site web</div>
     </div>
     <div class="metric-card" style="--card-accent:#003469">
@@ -618,7 +618,7 @@ function renderAll_Website(period) {
 
   const chartsHTML = `<div class="charts-stack">
     ${chartCard("wb_visiteurs",  "Visiteurs",   n(l["Visiteurs"]),   true)}
-    ${chartCard("wb_sessions",   "Sessions",    n(l["Sessions"]),    true)}
+    ${chartCard("wb_clicssite",  "Clics",    n(l["ClicsSite"]), true)}
     ${chartCard("wb_pagesvues",  "Pages vues",  n(l["Pages vues"]),  true)}
   </div>`;
 
@@ -626,7 +626,7 @@ function renderAll_Website(period) {
 
   setTimeout(() => {
     makeChart("wb_visiteurs", "Visiteurs",  vals("Visiteurs",   period), lb, "#00A759");
-    makeChart("wb_sessions",  "Sessions",   vals("Sessions",    period), lb, "#0061AF");
+    makeChart("wb_clicssite", "Clics",   vals("ClicsSite", period), lb, "#0061AF");
     makeChart("wb_pagesvues", "Pages vues", vals("Pages vues",  period), lb, "#003469");
   }, 50);
 }
@@ -713,7 +713,7 @@ function getCurrentMetrics() {
                  ["Engagement", parseInt(l["Réactions"]||0)+parseInt(l["Clics"]||0)]],
     newsletter: [["Abonnées", l["Abonnées"]], ["Croiss. nette", l["Croiss. nette"]]],
     linkedin:   [["Impressions", l["Impressions"]], ["Réactions", l["Réactions"]], ["Abonnés", l["Abonnés"]], ["Clics", l["Clics"]]],
-    website:    [["Visiteurs", l["Visiteurs"]], ["Sessions", l["Sessions"]], ["Pages vues", l["Pages vues"]]],
+    website:    [["Visiteurs", l["Visiteurs"]], ["Clics", l["ClicsSite"]], ["Pages vues", l["Pages vues"]]],
   };
   return (map[currentTab] || []).map(([k,v]) => `${k}: ${n(v)}`).join(", ");
 }
