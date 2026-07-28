@@ -437,7 +437,7 @@ async function loadSheet() {
     const parsed = parseCSV(text2);
     rowsInfolettres = parsed.filter(r => r.Type && r.Type.trim() !== "" && r.Type !== "Type");
     console.log("Infolettres chargées:", rowsInfolettres.length, "lignes");
-    if (rows.length) console.log("Colonnes KPI:", Object.keys(rows[0]));
+    if (rows.length) { console.log("Colonnes KPI:", Object.keys(rows[0]).join(" | ")); console.log("Derniere ligne:", JSON.stringify(rows[rows.length-1])); }
     console.log("Première ligne:", JSON.stringify(rowsInfolettres[0]));
   } catch(e) {
     console.warn("Erreur chargement Infolettres:", e);
