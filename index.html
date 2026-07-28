@@ -385,7 +385,7 @@ document.getElementById("headerLogo").src = "data:image/png;base64," + LOGO_WHIT
 
 /* ── Config Sheet ── */
 const SHEET_ID  = "1L0OGIG21FQr5yC9FgeL1a4ln8_PbnT0LtXcE-K_yqFc";
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=KPI&range=C6:S1000`;
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=KPI&range=C6:W1000`;
 const SHEET_URL_INFOLETTRES = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Infolettres&range=A6:H1000`;
 
 let rows       = [];
@@ -636,15 +636,19 @@ function renderAll_LinkedIn(period) {
     ${chartCard("lk_reactions",   "Réactions",         n(l["Réactions"]),   true)}
     ${chartCard("lk_abonnes",     "Abonnés",           n(l["Abonnés"]),     true)}
     ${chartCard("lk_clics",       "Clics publication", n(l["Clics"]),       true)}
+    ${chartCard("lk_posts",       "Posts natifs",      n(l["PostsLK"]),     true)}
+    ${chartCard("lk_repub",       "Republications",    n(l["RepubliLK"]),   true)}
   </div>`;
 
   document.getElementById("tabContent").innerHTML = metricsHTML + chartsHTML;
 
   setTimeout(() => {
-    makeChart("lk_impressions", "Impressions", vals("Impressions", period), lb, "#003469");
-    makeChart("lk_reactions",   "Réactions",   vals("Réactions",   period), lb, "#0061AF");
-    makeChart("lk_abonnes",     "Abonnés",     vals("Abonnés",     period), lb, "#00A759");
-    makeChart("lk_clics",       "Clics",       vals("Clics",       period), lb, "#FFCC4E");
+    makeChart("lk_impressions", "Impressions",    vals("Impressions", period), lb, "#003469");
+    makeChart("lk_reactions",   "Réactions",      vals("Réactions",   period), lb, "#0061AF");
+    makeChart("lk_abonnes",     "Abonnés",        vals("Abonnés",     period), lb, "#00A759");
+    makeChart("lk_clics",       "Clics",          vals("Clics",       period), lb, "#FFCC4E");
+    makeChart("lk_posts",       "Posts natifs",   vals("PostsLK",     period), lb, "#EE3124");
+    makeChart("lk_repub",       "Republications", vals("RepubliLK",   period), lb, "#624E11");
   }, 50);
 }
 
@@ -822,7 +826,7 @@ function getCurrentMetrics() {
                  ["Croissance audience", parseInt(l["Croiss. nette"]||0)+parseInt(l["Abonnés"]||0)],
                  ["Engagement", parseInt(l["Réactions"]||0)+parseInt(l["Clics"]||0)]],
     newsletter: [["Abonnées", l["Abonnées"]], ["Croiss. nette", l["Croiss. nette"]]],
-    linkedin:   [["Impressions", l["Impressions"]], ["Réactions", l["Réactions"]], ["Abonnés", l["Abonnés"]], ["Clics", l["Clics"]]],
+    linkedin:   [["Impressions", l["Impressions"]], ["Réactions", l["Réactions"]], ["Abonnés", l["Abonnés"]], ["Clics", l["Clics"]], ["Posts natifs", l["PostsLK"]], ["Republications", l["RepubliLK"]]],
     website:    [["Visiteurs", l["Visiteurs"]], ["Clics", l["ClicsSite"]], ["Pages vues", l["Pages vues"]]],
   };
   return (map[currentTab] || []).map(([k,v]) => `${k}: ${n(v)}`).join(", ");
