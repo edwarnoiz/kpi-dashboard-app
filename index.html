@@ -403,30 +403,34 @@ const COLORS = {
 
 /* ── Chargement Sheet ── */
 async function loadSheet() {
+  // Charger l'onglet KPI
   try {
-    const [res1, res2] = await Promise.all([
-      fetch(SHEET_URL),
-      fetch(SHEET_URL_INFOLETTRES)
-    ]);
+    const res1 = await fetch(SHEET_URL);
     const text1 = await res1.text();
-    const text2 = await res2.text();
-
     rows = parseCSV(text1).filter(r => r.Date && r.Date.trim() !== "" && r.Date !== "Date");
-
-    // Parser les infolettres — première ligne = en-têtes
-    try {
-      rowsInfolettres = parseCSV(text2).filter(r => r.Type && r.Type.trim() !== "" && r.Type !== "Type");
-    } catch(e) { rowsInfolettres = []; }
-
     document.getElementById("liveBadge").style.display  = "inline-flex";
     document.getElementById("errorBadge").style.display = "none";
     const last = rows[rows.length - 1];
     document.getElementById("lastUpdated").textContent = "Mis à jour le " + last.Date;
-    renderAll();
   } catch(e) {
     document.getElementById("liveBadge").style.display  = "none";
     document.getElementById("errorBadge").style.display = "inline-flex";
   }
+
+  // Charger l'onglet Infolettres séparément
+  try {
+    const res2 = await fetch(SHEET_URL_INFOLETTRES);
+    const text2 = await res2.text();
+    const parsed = parseCSV(text2);
+    rowsInfolettres = parsed.filter(r => r.Type && r.Type.trim() !== "" && r.Type !== "Type");
+    console.log("Infolettres chargées:", rowsInfolettres.length, "lignes");
+    console.log("Première ligne:", JSON.stringify(rowsInfolettres[0]));
+  } catch(e) {
+    console.warn("Erreur chargement Infolettres:", e);
+    rowsInfolettres = [];
+  }
+
+  renderAll();
 }
 
 function parseCSV(text) {
