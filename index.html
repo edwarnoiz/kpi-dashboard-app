@@ -255,6 +255,49 @@
     .insights-empty { font-size: 12px; color: var(--text-muted); font-style: italic; }
     @media (max-width: 500px) { .insights-grid { grid-template-columns: 1fr; } }
 
+    /* ── Tableau infolettres ── */
+    .infolettres-section {
+      margin-top: 1.5rem;
+    }
+    .infolettres-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    }
+    @media (max-width: 650px) { .infolettres-grid { grid-template-columns: 1fr; } }
+    .infolettre-card {
+      background: var(--bg-card); border-radius: 12px;
+      border: 0.5px solid var(--border); padding: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+    .infolettre-card-title {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .infolettre-badge {
+      font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600;
+    }
+    .badge-rsn      { background: #003469; color: #fff; }
+    .badge-coleaders{ background: #FFCC4E; color: #003469; }
+    .infolettre-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .infolettre-table th {
+      text-align: left; padding: 6px 8px; font-size: 10px; font-weight: 600;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .infolettre-table td {
+      padding: 8px; border-bottom: 0.5px solid var(--border);
+      color: var(--text); vertical-align: middle;
+    }
+    .infolettre-table tr:last-child td { border-bottom: none; }
+    .infolettre-table tr:hover td { background: var(--accent-soft); }
+    .stat-pill {
+      display: inline-block; padding: 2px 7px; border-radius: 6px;
+      font-size: 11px; font-weight: 500;
+    }
+    .stat-good { background: rgba(0,167,89,0.12); color: #00A759; }
+    .stat-mid  { background: rgba(255,204,78,0.15); color: #624E11; }
+    .stat-bad  { background: rgba(238,49,36,0.1);  color: #EE3124; }
+    .no-data   { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 1rem 0; }
+
     /* ── Footer ── */
     .footer-bar { height: 4px; background: linear-gradient(90deg, #003469, #0061AF, #00A759, #FFCC4E, #EE3124); }
     .site-footer { text-align: center; padding: 1rem; font-size: 11px; color: var(--text-muted); }
@@ -343,8 +386,10 @@ document.getElementById("headerLogo").src = "data:image/png;base64," + LOGO_WHIT
 /* ── Config Sheet ── */
 const SHEET_ID  = "1L0OGIG21FQr5yC9FgeL1a4ln8_PbnT0LtXcE-K_yqFc";
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&range=C6:S1000`;
+const SHEET_URL_INFOLETTRES = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Infolettres`;
 
 let rows       = [];
+let rowsInfolettres = [];
 let currentTab = "all";
 let charts     = {};
 let geminiKey  = "";
@@ -359,9 +404,20 @@ const COLORS = {
 /* ── Chargement Sheet ── */
 async function loadSheet() {
   try {
-    const res  = await fetch(SHEET_URL);
-    const text = await res.text();
-    rows = parseCSV(text).filter(r => r.Date && r.Date.trim() !== "" && r.Date !== "Date");
+    const [res1, res2] = await Promise.all([
+      fetch(SHEET_URL),
+      fetch(SHEET_URL_INFOLETTRES)
+    ]);
+    const text1 = await res1.text();
+    const text2 = await res2.text();
+
+    rows = parseCSV(text1).filter(r => r.Date && r.Date.trim() !== "" && r.Date !== "Date");
+
+    // Parser les infolettres — première ligne = en-têtes
+    try {
+      rowsInfolettres = parseCSV(text2).filter(r => r.Type && r.Type.trim() !== "" && r.Type !== "Type");
+    } catch(e) { rowsInfolettres = []; }
+
     document.getElementById("liveBadge").style.display  = "inline-flex";
     document.getElementById("errorBadge").style.display = "none";
     const last = rows[rows.length - 1];
@@ -668,6 +724,60 @@ function insightsHTML(l) {
       <div class="insights-col">
         <h4>📄 Pages les plus visitées (7 jours)</h4>
         <ul class="insights-list">${liPages}</ul>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── Tableau infolettres HTML ── */
+function infolettreSectionHTML() {
+  const rsn      = rowsInfolettres.filter(r => r.Type && r.Type.trim().toLowerCase().includes("rsn"));
+  const coleaders= rowsInfolettres.filter(r => r.Type && r.Type.trim().toLowerCase().includes("col"));
+
+  function tableRows(data) {
+    if (!data.length) return `<tr><td colspan="6" class="no-data">Aucune campagne enregistrée</td></tr>`;
+    return [...data].reverse().map(r => {
+      const ouv  = parseFloat(r.Ouverture||0);
+      const clic = parseFloat(r.Clics||0);
+      const boun = parseFloat(r.Bounce||0);
+      const des  = parseFloat(r.Desabo||0);
+      return `<tr>
+        <td>${r.Date || "—"}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.Description||""}">${r.Description || "—"}</td>
+        <td>${parseInt(r.Destinataires||0).toLocaleString("fr-CA")}</td>
+        <td><span class="stat-pill ${ouv>=40?"stat-good":ouv>=25?"stat-mid":"stat-bad"}">${ouv}%</span></td>
+        <td><span class="stat-pill ${clic>=5?"stat-good":clic>=2?"stat-mid":"stat-bad"}">${clic}%</span></td>
+        <td><span class="stat-pill ${boun<=1?"stat-good":boun<=3?"stat-mid":"stat-bad"}">${boun}%</span></td>
+        <td><span class="stat-pill ${des<=0.5?"stat-good":des<=1?"stat-mid":"stat-bad"}">${des}%</span></td>
+      </tr>`;
+    }).join("");
+  }
+
+  return `<div class="infolettres-section">
+    <div class="infolettres-grid">
+      <div class="infolettre-card">
+        <div class="infolettre-card-title">
+          📧 Infolettre RSN
+          <span class="infolettre-badge badge-rsn">Abonnés RSN</span>
+        </div>
+        <table class="infolettre-table">
+          <thead><tr>
+            <th>Date</th><th>Description</th><th>Destinat.</th><th>Ouverture</th><th>Clics</th><th>Bounce</th><th>Désabo</th>
+          </tr></thead>
+          <tbody>${tableRows(rsn)}</tbody>
+        </table>
+      </div>
+      <div class="infolettre-card">
+        <div class="infolettre-card-title">
+          📧 Le fil des coleaders
+          <span class="infolettre-badge badge-coleaders">Coleaders</span>
+        </div>
+        <table class="infolettre-table">
+          <thead><tr>
+            <th>Date</th><th>Description</th><th>Destinat.</th><th>Ouverture</th><th>Clics</th><th>Bounce</th><th>Désabo</th>
+          </tr></thead>
+          <tbody>${tableRows(coleaders)}</tbody>
+        </table>
       </div>
     </div>
   </div>`;
