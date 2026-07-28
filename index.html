@@ -424,6 +424,7 @@ async function loadSheet() {
     const parsed = parseCSV(text2);
     rowsInfolettres = parsed.filter(r => r.Type && r.Type.trim() !== "" && r.Type !== "Type");
     console.log("Infolettres chargées:", rowsInfolettres.length, "lignes");
+    if (rows.length) console.log("Colonnes KPI:", Object.keys(rows[0]));
     console.log("Première ligne:", JSON.stringify(rowsInfolettres[0]));
   } catch(e) {
     console.warn("Erreur chargement Infolettres:", e);
@@ -627,6 +628,18 @@ function renderAll_LinkedIn(period) {
       <div class="metric-label">Clics publication</div>
       <div class="metric-value">${n(l["Clics"])}</div>
       <div class="metric-trend ${tUp(l["Clics"],p["Clics"],false)?"trend-up":"trend-down"}">${tUp(l["Clics"],p["Clics"],false)?"↑":"↓"} ${td(l["Clics"],p["Clics"])}</div>
+      <div class="metric-source">LinkedIn</div>
+    </div>
+    <div class="metric-card" style="--card-accent:#EE3124">
+      <div class="metric-label">Posts natifs</div>
+      <div class="metric-value">${n(l["PostsLK"])}</div>
+      <div class="metric-trend ${tUp(l["PostsLK"],p["PostsLK"],false)?"trend-up":"trend-down"}">${tUp(l["PostsLK"],p["PostsLK"],false)?"↑":"↓"} ${td(l["PostsLK"],p["PostsLK"])}</div>
+      <div class="metric-source">LinkedIn</div>
+    </div>
+    <div class="metric-card" style="--card-accent:#624E11">
+      <div class="metric-label">Republications</div>
+      <div class="metric-value">${n(l["RepubliLK"])}</div>
+      <div class="metric-trend ${tUp(l["RepubliLK"],p["RepubliLK"],false)?"trend-up":"trend-down"}">${tUp(l["RepubliLK"],p["RepubliLK"],false)?"↑":"↓"} ${td(l["RepubliLK"],p["RepubliLK"])}</div>
       <div class="metric-source">LinkedIn</div>
     </div>
   </div>`;
