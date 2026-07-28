@@ -588,7 +588,7 @@ function renderAll_Newsletter(period) {
 
   </div>`;
 
-  document.getElementById("tabContent").innerHTML = metricsHTML + chartsHTML;
+  document.getElementById("tabContent").innerHTML = metricsHTML + chartsHTML + infolettreSectionHTML();
 
   setTimeout(() => {
     makeChart("nl_abonnees", "Abonnées",      vals("Abonnées",    period), lb, "#003469");
