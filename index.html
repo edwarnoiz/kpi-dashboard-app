@@ -255,6 +255,19 @@
     .insights-empty { font-size: 12px; color: var(--text-muted); font-style: italic; }
     @media (max-width: 500px) { .insights-grid { grid-template-columns: 1fr; } }
 
+    /* ── Graphique combiné ── */
+    .chart-card-combined {
+      background: var(--bg-card); border-radius: 12px;
+      border: 0.5px solid var(--border); border-top: 3px solid #003469;
+      padding: 1.25rem; box-shadow: var(--shadow); margin-bottom: 14px;
+    }
+    .chart-combined-title {
+      font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px;
+    }
+    .chart-combined-sub {
+      font-size: 11px; color: var(--text-muted); margin-bottom: 14px;
+    }
+
     /* ── Tableau infolettres ── */
     .infolettres-section {
       margin-top: 1.5rem;
@@ -653,9 +666,81 @@ function renderAll_LinkedIn(period) {
     ${chartCard("lk_repub",       "Republications",    n(l["RepubliLK"]),   true)}
   </div>`;
 
-  document.getElementById("tabContent").innerHTML = metricsHTML + chartsHTML;
+  const combinedHTML = `<div class="chart-card-combined">
+    <div class="chart-combined-title">📊 Publications vs Portée</div>
+    <div class="chart-combined-sub">Barres = posts publiés (natifs + republications) · Ligne = impressions</div>
+    <div style="position:relative;height:220px"><canvas id="lk_combined"></canvas></div>
+  </div>`;
+
+  document.getElementById("tabContent").innerHTML = combinedHTML + metricsHTML + chartsHTML;
 
   setTimeout(() => {
+    // Graphique combiné Publications vs Portée
+    if (charts["lk_combined"]) { charts["lk_combined"].destroy(); delete charts["lk_combined"]; }
+    const combinedCanvas = document.getElementById("lk_combined");
+    if (combinedCanvas) {
+      const postsVals = sliced(period).map(r => (parseInt(r["PostsLK"]||0) + parseInt(r["RepubliLK"]||0)));
+      const impVals   = vals("Impressions", period);
+      charts["lk_combined"] = new Chart(combinedCanvas, {
+        data: {
+          labels: lb,
+          datasets: [
+            {
+              type: "bar",
+              label: "Publications totales",
+              data: postsVals,
+              backgroundColor: "#003469" + "88",
+              borderColor: "#003469",
+              borderWidth: 1,
+              borderRadius: 4,
+              yAxisID: "yPosts",
+            },
+            {
+              type: "line",
+              label: "Impressions",
+              data: impVals,
+              borderColor: "#FFCC4E",
+              backgroundColor: "transparent",
+              borderWidth: 2.5,
+              tension: 0.4,
+              pointRadius: 4,
+              pointBackgroundColor: "#FFCC4E",
+              yAxisID: "yImpressions",
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: "top",
+              labels: { font: { size: 11 }, color: isDark ? "#8899aa" : "#888", boxWidth: 12 }
+            }
+          },
+          scales: {
+            yPosts: {
+              type: "linear", position: "left",
+              ticks: { font: { size: 10 }, color: "#003469", stepSize: 1 },
+              grid: { color: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)" },
+              title: { display: true, text: "Posts", font: { size: 10 }, color: "#003469" }
+            },
+            yImpressions: {
+              type: "linear", position: "right",
+              ticks: { font: { size: 10 }, color: "#FFCC4E" },
+              grid: { display: false },
+              title: { display: true, text: "Impressions", font: { size: 10 }, color: "#FFCC4E" }
+            },
+            x: {
+              ticks: { font: { size: 10 }, color: isDark ? "#8899aa" : "#888", maxTicksLimit: 8 },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
     makeChart("lk_impressions", "Impressions",    vals("Impressions", period), lb, "#003469");
     makeChart("lk_reactions",   "Réactions",      vals("Réactions",   period), lb, "#0061AF");
     makeChart("lk_abonnes",     "Abonnés",        vals("Abonnés",     period), lb, "#00A759");
