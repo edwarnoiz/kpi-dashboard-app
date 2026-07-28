@@ -666,11 +666,11 @@ function renderAll_LinkedIn(period) {
     ${chartCard("lk_repub",       "Republications",    n(l["RepubliLK"]),   true)}
   </div>`;
 
-  const combinedHTML = `<div class="chart-card-combined">
-    <div class="chart-combined-title">📊 Publications vs Portée</div>
-    <div class="chart-combined-sub">Barres = posts publiés (natifs + republications) · Ligne = impressions</div>
-    <div style="position:relative;height:220px"><canvas id="lk_combined"></canvas></div>
-  </div>`;
+  var combinedHTML = '<div class="chart-card-combined">';
+  combinedHTML += '<div class="chart-combined-title">Publications vs Portee</div>';
+  combinedHTML += '<div class="chart-combined-sub">Barres = posts publies (natifs + republications) &middot; Ligne = impressions</div>';
+  combinedHTML += '<div style="position:relative;height:220px"><canvas id="lk_combined"></canvas></div>';
+  combinedHTML += '</div>';
 
   document.getElementById("tabContent").innerHTML = combinedHTML + metricsHTML + chartsHTML;
 
