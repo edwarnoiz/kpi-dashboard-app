@@ -737,10 +737,10 @@ function infolettreSectionHTML() {
   function tableRows(data) {
     if (!data.length) return `<tr><td colspan="6" class="no-data">Aucune campagne enregistrée</td></tr>`;
     return [...data].reverse().map(r => {
-      const ouv  = parseFloat(r.Ouverture||0);
-      const clic = parseFloat(r.Clics||0);
-      const boun = parseFloat(r.Bounce||0);
-      const des  = parseFloat(r.Desabo||0);
+      const ouv  = parseFloat(r["Ouverture"]||0);
+      const clic = parseFloat(r["Clic"]||0);
+      const boun = parseFloat(r["Bounce"]||0);
+      const des  = parseFloat(r["Desabonnement"]||0);
       return `<tr>
         <td>${r.Date || "—"}</td>
         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.Description||""}">${r.Description || "—"}</td>
