@@ -420,7 +420,16 @@ async function loadSheet() {
   try {
     const res1 = await fetch(SHEET_URL);
     const text1 = await res1.text();
-    rows = parseCSV(text1).filter(r => r.Date && r.Date.trim() !== "" && r.Date !== "Date");
+    const allRows = parseCSV(text1).filter(r => r.Date && r.Date.trim() !== "" && r.Date !== "Date");
+    // Filtrer les lignes qui ont au moins une valeur non-zero
+    rows = allRows;
+    // Trouver la dernière ligne avec des données réelles (pas juste des zéros)
+    const lastDataRow = allRows.slice().reverse().find(r => 
+      parseFloat(r["Abonnées"]||0) > 0 || 
+      parseFloat(r["Impressions"]||0) > 0 || 
+      parseFloat(r["Sessions"]||0) > 0
+    );
+    if (lastDataRow) rows._lastData = lastDataRow;
     document.getElementById("liveBadge").style.display  = "inline-flex";
     document.getElementById("errorBadge").style.display = "none";
     const last = rows[rows.length - 1];
@@ -576,7 +585,7 @@ function renderAll_Overview(period) {
 /* ── INFOLETTRE ── */
 function renderAll_Newsletter(period) {
   if (!rows.length) return;
-  const l = rows[rows.length-1];
+  const l = rows._lastData || rows[rows.length-1];
   const lb = labels(period);
   const p = rows.slice(-period).length>1 ? rows.slice(-period)[0] : l;
 
@@ -614,7 +623,8 @@ function renderAll_Newsletter(period) {
 /* ── LINKEDIN ── */
 function renderAll_LinkedIn(period) {
   if (!rows.length) return;
-  const l = rows[rows.length-1];
+  const l = rows._lastData || rows[rows.length-1];
+  console.log("LINKEDIN derniere ligne:", JSON.stringify(l));
   const lb = labels(period);
   const p = rows.slice(-period).length>1 ? rows.slice(-period)[0] : l;
 
@@ -771,7 +781,7 @@ function renderAll_LinkedIn(period) {
 /* ── SITE WEB ── */
 function renderAll_Website(period) {
   if (!rows.length) return;
-  const l = rows[rows.length-1];
+  const l = rows._lastData || rows[rows.length-1];
   const lb = labels(period);
   const p = rows.slice(-period).length>1 ? rows.slice(-period)[0] : l;
 
@@ -783,7 +793,7 @@ function renderAll_Website(period) {
       <div class="metric-source">Site web</div>
     </div>
     <div class="metric-card" style="--card-accent:#0061AF">
-      <div class="metric-label">Clics</div>
+      <div class="metric-label">Sessions</div>
       <div class="metric-value">${n(l["Sessions"])}</div>
       <div class="metric-trend ${tUp(l["Sessions"],p["Sessions"],false)?"trend-up":"trend-down"}">${tUp(l["Sessions"],p["Sessions"],false)?"↑":"↓"} ${td(l["Sessions"],p["Sessions"])}</div>
       <div class="metric-source">Site web</div>
