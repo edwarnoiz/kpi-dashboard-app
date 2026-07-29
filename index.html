@@ -522,8 +522,8 @@ function renderAll_Overview(period) {
   const p = s.length>1 ? s[0] : l;
 
   // Calculs synthèse
-  const portee     = parseInt(l["Impressions"]||0) + parseInt(l["Visiteurs"]||0) + parseInt(l["Abonnées"]||0);
-  const porteePrev = parseInt(p["Impressions"]||0) + parseInt(p["Visiteurs"]||0) + parseInt(p["Abonnées"]||0);
+  const portee     = parseInt(l["Impressions"]||0) + parseInt(l["Utilisateurs"]||0) + parseInt(l["Abonnées"]||0);
+  const porteePrev = parseInt(p["Impressions"]||0) + parseInt(p["Utilisateurs"]||0) + parseInt(p["Abonnées"]||0);
   const croissance = parseInt(l["Croiss. nette"]||0) + parseInt(l["Abonnés"]||0);
   const croissPrev = parseInt(p["Croiss. nette"]||0) + parseInt(p["Abonnés"]||0);
   const engage     = parseInt(l["Réactions"]||0) + parseInt(l["Clics"]||0);
@@ -557,7 +557,7 @@ function renderAll_Overview(period) {
   // Graphiques combinés
   const chartsHTML = `<div class="charts-grid">
     ${chartCard("c_impressions", "Impressions LinkedIn",  n(l["Impressions"]), false)}
-    ${chartCard("c_visiteurs",   "Visiteurs site web",    n(l["Visiteurs"]),   false)}
+    ${chartCard("c_visiteurs",   "Utilisateurs site web",    n(l["Utilisateurs"]),   false)}
     ${chartCard("c_abonnees",    "Abonnées infolettre",   n(l["Abonnées"]),    false)}
     ${chartCard("c_engagement",  "Engagement LinkedIn",   n(engage),           false)}
   </div>`;
@@ -566,7 +566,7 @@ function renderAll_Overview(period) {
 
   setTimeout(() => {
     makeChart("c_impressions", "Impressions",  vals("Impressions", period),   lb, "#0061AF");
-    makeChart("c_visiteurs",   "Visiteurs",    vals("Visiteurs",   period),   lb, "#00A759");
+    makeChart("c_visiteurs",   "Utilisateurs",    vals("Utilisateurs",   period),   lb, "#00A759");
     makeChart("c_abonnees",    "Abonnées",     vals("Abonnées",    period),   lb, "#003469");
     const engageVals = s.map(r => parseInt(r["Réactions"]||0) + parseInt(r["Clics"]||0));
     makeChart("c_engagement",  "Engagement",   engageVals,                    lb, "#FFCC4E");
@@ -675,31 +675,85 @@ function renderAll_LinkedIn(period) {
   document.getElementById("tabContent").innerHTML = combinedHTML + metricsHTML + chartsHTML;
 
   setTimeout(() => {
-    // Graphique combiné Publications vs Portee
+    // Graphique combiné Publications vs Impressions
     if (charts["lk_combined"]) { charts["lk_combined"].destroy(); delete charts["lk_combined"]; }
     var canvasCombined = document.getElementById("lk_combined");
     if (canvasCombined) {
-      var postsData = sliced(period).map(function(r) { return parseInt(r["PostsLK"]||0) + parseInt(r["RepubliLK"]||0); });
-      var natifs    = sliced(period).map(function(r) { return parseInt(r["PostsLK"]||0); });
-      var repub     = sliced(period).map(function(r) { return parseInt(r["RepubliLK"]||0); });
+      var natifs   = sliced(period).map(function(r) { return parseInt(r["PostsLK"]||0); });
+      var repub    = sliced(period).map(function(r) { return parseInt(r["RepubliLK"]||0); });
+      var impress  = vals("Impressions", period);
       charts["lk_combined"] = new Chart(canvasCombined, {
         type: "bar",
         data: {
           labels: lb,
           datasets: [
-            { label: "Posts natifs",    data: natifs, backgroundColor: "#003469", borderRadius: 3 },
-            { label: "Republications",  data: repub,  backgroundColor: "#0061AF", borderRadius: 3 }
+            {
+              type: "bar",
+              label: "Posts natifs",
+              data: natifs,
+              backgroundColor: "#003469cc",
+              borderRadius: 3,
+              yAxisID: "yBar",
+              order: 2
+            },
+            {
+              type: "bar",
+              label: "Republications",
+              data: repub,
+              backgroundColor: "#0061AFcc",
+              borderRadius: 3,
+              yAxisID: "yBar",
+              order: 2
+            },
+            {
+              type: "line",
+              label: "Impressions",
+              data: impress,
+              borderColor: "#FFCC4E",
+              backgroundColor: "transparent",
+              borderWidth: 2.5,
+              tension: 0.4,
+              pointRadius: 3,
+              pointBackgroundColor: "#FFCC4E",
+              yAxisID: "yLine",
+              order: 1
+            }
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
           plugins: {
-            legend: { display: true, position: "top", labels: { font: { size: 11 }, boxWidth: 12 } }
+            legend: {
+              display: true,
+              position: "top",
+              labels: { font: { size: 11 }, boxWidth: 12, color: isDark?"#8899aa":"#555" }
+            }
           },
           scales: {
-            x: { stacked: true, ticks: { font: { size: 10 }, color: isDark?"#8899aa":"#888", maxTicksLimit: 8 }, grid: { display: false } },
-            y: { stacked: true, ticks: { font: { size: 10 }, color: isDark?"#8899aa":"#888", stepSize: 1 }, grid: { color: isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.06)" } }
+            yBar: {
+              type: "linear",
+              position: "left",
+              stacked: true,
+              min: 0,
+              ticks: { font: { size: 10 }, color: "#003469", stepSize: 1 },
+              grid: { color: isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.06)" },
+              title: { display: true, text: "Publications", font: { size: 10 }, color: "#003469" }
+            },
+            yLine: {
+              type: "linear",
+              position: "right",
+              min: 0,
+              ticks: { font: { size: 10 }, color: "#FFCC4E" },
+              grid: { display: false },
+              title: { display: true, text: "Impressions", font: { size: 10 }, color: "#FFCC4E" }
+            },
+            x: {
+              stacked: true,
+              ticks: { font: { size: 10 }, color: isDark?"#8899aa":"#888", maxTicksLimit: 8 },
+              grid: { display: false }
+            }
           }
         }
       });
@@ -723,15 +777,15 @@ function renderAll_Website(period) {
 
   const metricsHTML = `<div class="metrics-grid">
     <div class="metric-card" style="--card-accent:#00A759">
-      <div class="metric-label">Visiteurs</div>
-      <div class="metric-value">${n(l["Visiteurs"])}</div>
-      <div class="metric-trend ${tUp(l["Visiteurs"],p["Visiteurs"],false)?"trend-up":"trend-down"}">${tUp(l["Visiteurs"],p["Visiteurs"],false)?"↑":"↓"} ${td(l["Visiteurs"],p["Visiteurs"])}</div>
+      <div class="metric-label">Utilisateurs</div>
+      <div class="metric-value">${n(l["Utilisateurs"])}</div>
+      <div class="metric-trend ${tUp(l["Utilisateurs"],p["Utilisateurs"],false)?"trend-up":"trend-down"}">${tUp(l["Utilisateurs"],p["Utilisateurs"],false)?"↑":"↓"} ${td(l["Utilisateurs"],p["Utilisateurs"])}</div>
       <div class="metric-source">Site web</div>
     </div>
     <div class="metric-card" style="--card-accent:#0061AF">
       <div class="metric-label">Clics</div>
-      <div class="metric-value">${n(l["ClicsSite"])}</div>
-      <div class="metric-trend ${tUp(l["ClicsSite"],p["ClicsSite"],false)?"trend-up":"trend-down"}">${tUp(l["ClicsSite"],p["ClicsSite"],false)?"↑":"↓"} ${td(l["ClicsSite"],p["ClicsSite"])}</div>
+      <div class="metric-value">${n(l["Sessions"])}</div>
+      <div class="metric-trend ${tUp(l["Sessions"],p["Sessions"],false)?"trend-up":"trend-down"}">${tUp(l["Sessions"],p["Sessions"],false)?"↑":"↓"} ${td(l["Sessions"],p["Sessions"])}</div>
       <div class="metric-source">Site web</div>
     </div>
     <div class="metric-card" style="--card-accent:#003469">
@@ -743,16 +797,16 @@ function renderAll_Website(period) {
   </div>`;
 
   const chartsHTML = `<div class="charts-stack">
-    ${chartCard("wb_visiteurs",  "Visiteurs",   n(l["Visiteurs"]),   true)}
-    ${chartCard("wb_clicssite",  "Clics",    n(l["ClicsSite"]), true)}
+    ${chartCard("wb_utilisateurs",  "Utilisateurs",   n(l["Utilisateurs"]),   true)}
+    ${chartCard("wb_sessions",  "Clics",    n(l["Sessions"]), true)}
     ${chartCard("wb_pagesvues",  "Pages vues",  n(l["Pages vues"]),  true)}
   </div>`;
 
   document.getElementById("tabContent").innerHTML = metricsHTML + chartsHTML + insightsHTML(l);
 
   setTimeout(() => {
-    makeChart("wb_visiteurs", "Visiteurs",  vals("Visiteurs",   period), lb, "#00A759");
-    makeChart("wb_clicssite", "Clics",   vals("ClicsSite", period), lb, "#0061AF");
+    makeChart("wb_utilisateurs", "Utilisateurs",  vals("Utilisateurs",   period), lb, "#00A759");
+    makeChart("wb_sessions", "Sessions",   vals("Sessions", period), lb, "#0061AF");
     makeChart("wb_pagesvues", "Pages vues", vals("Pages vues",  period), lb, "#003469");
   }, 50);
 }
@@ -884,12 +938,12 @@ function getCurrentMetrics() {
   const l = rows[rows.length-1];
   const p = rows.length>1 ? rows[rows.length-2] : l;
   const map = {
-    all:        [["Portée totale", parseInt(l["Impressions"]||0)+parseInt(l["Visiteurs"]||0)+parseInt(l["Abonnées"]||0)],
+    all:        [["Portée totale", parseInt(l["Impressions"]||0)+parseInt(l["Utilisateurs"]||0)+parseInt(l["Abonnées"]||0)],
                  ["Croissance audience", parseInt(l["Croiss. nette"]||0)+parseInt(l["Abonnés"]||0)],
                  ["Engagement", parseInt(l["Réactions"]||0)+parseInt(l["Clics"]||0)]],
     newsletter: [["Abonnées", l["Abonnées"]], ["Croiss. nette", l["Croiss. nette"]]],
     linkedin:   [["Impressions", l["Impressions"]], ["Réactions", l["Réactions"]], ["Abonnés", l["Abonnés"]], ["Clics", l["Clics"]], ["Posts natifs", l["PostsLK"]], ["Republications", l["RepubliLK"]]],
-    website:    [["Visiteurs", l["Visiteurs"]], ["Clics", l["ClicsSite"]], ["Pages vues", l["Pages vues"]]],
+    website:    [["Utilisateurs", l["Utilisateurs"]], ["Clics", l["Sessions"]], ["Pages vues", l["Pages vues"]]],
   };
   return (map[currentTab] || []).map(([k,v]) => `${k}: ${n(v)}`).join(", ");
 }
